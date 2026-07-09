@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: rihua-ingredient-api
+    env: python
+    region: singapore
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: BAIDU_API_KEY
+        sync: false
+      - key: BAIDU_Secret_Key
+        sync: false
