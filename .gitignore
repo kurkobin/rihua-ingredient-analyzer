@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+rihua_production/
+*.egg-info/
+
+# Node.js
+node_modules/
+dist/
+
+# 环境变量
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# 上传的图片
+uploads/
+
+# 测试文件
+test_api.py
