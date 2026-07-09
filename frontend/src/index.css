@@ -1,0 +1,343 @@
+/* 全局样式 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: #f5f6fa;
+  color: #2d3436;
+  line-height: 1.6;
+}
+
+.app {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.header h1 {
+  font-size: 24px;
+  color: #2d3436;
+  margin-bottom: 8px;
+}
+
+.header p {
+  font-size: 14px;
+  color: #636e72;
+}
+
+/* 上传区 */
+.upload-area {
+  background: #fff;
+  border: 2px dashed #dfe6e9;
+  border-radius: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.upload-area:hover {
+  border-color: #0984e3;
+  background: #f8faff;
+}
+
+.upload-area.has-image {
+  padding: 16px;
+  border-style: solid;
+}
+
+.upload-area img {
+  max-width: 100%;
+  max-height: 320px;
+  border-radius: 8px;
+}
+
+.upload-tip {
+  color: #636e72;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.upload-icon {
+  font-size: 40px;
+  color: #b2bec3;
+  margin-bottom: 12px;
+}
+
+/* 按钮 */
+.btn {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 16px;
+}
+
+.btn-primary {
+  background: #0984e3;
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #0873c4;
+}
+
+.btn-primary:disabled {
+  background: #b2bec3;
+  cursor: not-allowed;
+}
+
+/* 加载状态 */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #636e72;
+}
+
+.spinner {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  border: 3px solid #dfe6e9;
+  border-top-color: #0984e3;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 12px;
+}
+
+.loading-steps {
+  font-size: 14px;
+  line-height: 2;
+  color: #636e72;
+}
+
+.loading-tip {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #b2bec3;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 错误提示 */
+.error {
+  background: #ffeaea;
+  color: #d63031;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+/* 结果卡片 */
+.result {
+  margin-top: 24px;
+}
+
+.score-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.score-number {
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.score-number.good { color: #00b894; }
+.score-number.mid { color: #fdcb6e; }
+.score-number.bad { color: #d63031; }
+
+.score-label {
+  font-size: 14px;
+  color: #636e72;
+  margin-top: 4px;
+}
+
+.summary {
+  margin-top: 12px;
+  color: #2d3436;
+  font-size: 15px;
+}
+
+/* 优缺点 */
+.pros-cons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 600px) {
+  .pros-cons {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.card h3 {
+  font-size: 16px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card.pros h3 { color: #00b894; }
+.card.cons h3 { color: #d63031; }
+
+.card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.card li {
+  font-size: 14px;
+  padding: 6px 0;
+  border-bottom: 1px solid #f1f2f6;
+}
+
+.card li:last-child {
+  border-bottom: none;
+}
+
+/* 成分列表 */
+.ingredient-list {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.ingredient-list h3 {
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+.ingredient-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f2f6;
+  font-size: 14px;
+  gap: 12px;
+}
+
+.ingredient-item:last-child {
+  border-bottom: none;
+}
+
+.ingredient-detail {
+  flex: 1;
+  min-width: 0;
+}
+
+.ingredient-name {
+  font-weight: 500;
+}
+
+.db-badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: #f1f2f6;
+  color: #636e72;
+  margin-left: 6px;
+  font-weight: normal;
+}
+
+.ingredient-desc {
+  font-size: 12px;
+  color: #636e72;
+  margin-top: 2px;
+}
+
+.ingredient-ref {
+  font-size: 11px;
+  color: #0984e3;
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.product-type {
+  font-size: 14px;
+  color: #2d3436;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.ingredient-meta {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 120px;
+}
+
+.tag {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.tag.safe { background: #e6fffa; color: #00b894; }
+.tag.notice { background: #fff9e6; color: #f39c12; }
+.tag.caution { background: #fff0f0; color: #d63031; }
+.tag.avoid { background: #ffe0e0; color: #c0392b; }
+.tag.unknown { background: #f1f2f6; color: #636e72; }
+
+/* OCR 原文 */
+.ocr-text {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.ocr-text h3 {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.ocr-text pre {
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 13px;
+  color: #636e72;
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 6px;
+}
