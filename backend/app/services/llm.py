@@ -3,11 +3,13 @@
 负责将配料表文字转化为用户易懂的"优缺点"分析。
 """
 import json
+import re
 
 import httpx
 
 from app.config import settings
 from app.models.schemas import AnalysisResult, IngredientInfo
+
 
 class DeepSeekService:
     """DeepSeek 大模型分析服务"""
@@ -88,31 +90,42 @@ class DeepSeekService:
             resp.raise_for_status()
             data = resp.json()
 
-        content = data["choices"][0]["message"]["content"].strip()
-
-        # 兼容 LLM 可能包裹的 markdown 代码块
-        if content.startswith("```"):
-            # 去掉首行 ```json 或 ``` 和末尾 ```
-            content = content.split("\n", 1)[1] if "\n" in content else content[3:]
-            if content.endswith("```"):
-                content = content[:-3]
-            content = content.strip()
-
+        # 响应结构解析保护(避免 KeyError/IndexError)
         try:
-            result = json.loads(content)
-        except json.JSONDecodeError:
-            # 解析失败时返回降级结果
+            content = data["choices"][0]["message"]["content"].strip()
+        except (KeyError, IndexError, TypeError):
             return AnalysisResult(
-                pros=[],
-                cons=[],
-                score=0,
+                pros=[], cons=[], score=0,
+                summary="LLM 响应结构异常,请重试",
+            )
+
+        # 用正则提取 JSON 对象,兼容 markdown 代码块和前后多余文本
+        json_match = re.search(r'\{[\s\S]*\}', content)
+        if not json_match:
+            return AnalysisResult(
+                pros=[], cons=[], score=0,
                 summary="分析结果解析失败,请重试",
             )
 
-        return AnalysisResult(
-            pros=result.get("pros", []),
-            cons=result.get("cons", []),
-            score=result.get("score", 0),
-            summary=result.get("summary", ""),
-            product_type=result.get("product_type", ""),
-        )
+        try:
+            result = json.loads(json_match.group(0))
+        except json.JSONDecodeError:
+            return AnalysisResult(
+                pros=[], cons=[], score=0,
+                summary="分析结果解析失败,请重试",
+            )
+
+        # AnalysisResult 构造保护(避免 pydantic ValidationError)
+        try:
+            return AnalysisResult(
+                pros=result.get("pros", []),
+                cons=result.get("cons", []),
+                score=result.get("score", 0),
+                summary=result.get("summary", ""),
+                product_type=result.get("product_type", ""),
+            )
+        except Exception:
+            return AnalysisResult(
+                pros=[], cons=[], score=0,
+                summary="分析结果格式异常,请重试",
+            )

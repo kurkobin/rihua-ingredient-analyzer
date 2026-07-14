@@ -11,6 +11,7 @@ import httpx
 from app.config import settings
 from app.models.schemas import OCRResult
 
+
 class BaiduOCRService:
     """百度云 OCR 服务"""
 
@@ -81,7 +82,8 @@ class BaiduOCRService:
                 f"百度云 OCR 错误 [{data['error_code']}]: {data.get('error_msg', '未知错误')}"
             )
 
-        words_result = data.get("words_result", [])
+        # words_result 在识别失败时可能为 null,用 or 兜底
+        words_result = data.get("words_result") or []
         words = [item["words"] for item in words_result]
         text = "\n".join(words)
 

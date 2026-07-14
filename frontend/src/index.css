@@ -242,6 +242,95 @@ body {
   margin-bottom: 12px;
 }
 
+/* 成分筛选条 */
+.filter-bar {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #f1f2f6;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-item label {
+  font-size: 12px;
+  color: #636e72;
+  font-weight: 500;
+}
+
+.filter-item select {
+  padding: 6px 8px;
+  border: 1px solid #dfe6e9;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+  color: #2d3436;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.filter-item select:focus {
+  border-color: #0984e3;
+}
+
+/* 仅入库 checkbox 跨整行 */
+.filter-checkbox {
+  grid-column: span 2;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-checkbox label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #2d3436;
+  cursor: pointer;
+}
+
+.filter-checkbox input[type="checkbox"] {
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+}
+
+/* 筛选结果计数 */
+.filter-count {
+  font-size: 12px;
+  color: #636e72;
+  margin-bottom: 8px;
+  padding-left: 4px;
+}
+
+/* 筛选后无结果提示 */
+.filter-empty {
+  text-align: center;
+  color: #b2bec3;
+  padding: 24px 0;
+  font-size: 14px;
+}
+
+/* 移动端:筛选条单列 */
+@media (max-width: 600px) {
+  .filter-bar {
+    grid-template-columns: 1fr;
+  }
+  .filter-checkbox {
+    grid-column: span 1;
+  }
+}
+
 .ingredient-item {
   display: flex;
   justify-content: space-between;
@@ -340,4 +429,797 @@ body {
   background: #f8f9fa;
   padding: 12px;
   border-radius: 6px;
+}
+
+/* ===== 顶部栏 + 链接按钮 ===== */
+.topbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: #0984e3;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.link-btn:hover {
+  background: #f0f4ff;
+}
+
+/* ===== 次要按钮 ===== */
+.btn-secondary {
+  background: #f1f2f6;
+  color: #2d3436;
+}
+
+.btn-secondary:hover {
+  background: #dfe6e9;
+}
+
+.btn-danger {
+  background: #fff0f0;
+  color: #d63031;
+}
+
+.btn-danger:hover {
+  background: #ffe0e0;
+}
+
+/* ===== 历史记录页 ===== */
+.history-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.history-actions .btn {
+  flex: 1;
+  margin-top: 0;
+  padding: 10px;
+  font-size: 14px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #b2bec3;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.empty-tip {
+  font-size: 13px;
+  margin-top: 8px;
+  color: #b2bec3;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.history-card {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  gap: 14px;
+}
+
+.history-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.history-card-left {
+  flex-shrink: 0;
+}
+
+.history-score {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.history-score.good { background: #00b894; }
+.history-score.mid { background: #fdcb6e; }
+.history-score.bad { background: #d63031; }
+
+.history-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-product {
+  font-size: 15px;
+  font-weight: 600;
+  color: #2d3436;
+  margin-bottom: 2px;
+}
+
+.history-summary {
+  font-size: 13px;
+  color: #636e72;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 4px;
+}
+
+.history-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: #b2bec3;
+}
+
+.history-delete {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #b2bec3;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.history-delete:hover {
+  background: #ffe0e0;
+  color: #d63031;
+}
+
+/* ===== 勾选模式 ===== */
+.history-card.selected {
+  border: 2px solid #0984e3;
+  background: #f0f7ff;
+}
+
+.history-checkbox {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 4px;
+}
+
+.history-checkbox input {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.select-count {
+  font-size: 14px;
+  color: #0984e3;
+  font-weight: 500;
+  align-self: center;
+}
+
+.select-tip {
+  background: #f0f7ff;
+  color: #0984e3;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+/* ===== 对比结果 ===== */
+.compare-view {
+  margin-top: 16px;
+}
+
+.compare-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.compare-header h2 {
+  font-size: 20px;
+  color: #2d3436;
+}
+
+.compare-header .btn {
+  width: auto;
+  margin-top: 0;
+  padding: 8px 16px;
+}
+
+.compare-section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.compare-section h3 {
+  font-size: 16px;
+  margin-bottom: 8px;
+  color: #2d3436;
+}
+
+.compare-desc {
+  font-size: 13px;
+  color: #b2bec3;
+  margin-bottom: 12px;
+}
+
+.compare-scores {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.compare-score-card {
+  flex: 1;
+  min-width: 100px;
+  text-align: center;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px 8px;
+}
+
+.compare-score-card .history-score {
+  margin: 0 auto 8px;
+}
+
+.compare-product-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2d3436;
+  margin-bottom: 2px;
+}
+
+.compare-ingredient-count {
+  font-size: 12px;
+  color: #b2bec3;
+}
+
+.compare-pros-cons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.compare-pc-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.compare-pc-card h4 {
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: #2d3436;
+}
+
+.compare-pros,
+.compare-cons {
+  margin-bottom: 8px;
+}
+
+.compare-pros strong {
+  color: #00b894;
+  font-size: 13px;
+}
+
+.compare-cons strong {
+  color: #d63031;
+  font-size: 13px;
+}
+
+.compare-pros ul,
+.compare-cons ul {
+  list-style: none;
+  padding: 0;
+  margin-top: 4px;
+}
+
+.compare-pros li,
+.compare-cons li {
+  font-size: 12px;
+  color: #636e72;
+  padding: 2px 0;
+}
+
+.compare-pros li.muted,
+.compare-cons li.muted,
+.muted {
+  color: #b2bec3;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ingredient-tag {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+.ingredient-tag.common {
+  background: #e6fffa;
+  color: #00b894;
+}
+
+.ingredient-tag.unique {
+  background: #fff9e6;
+  color: #f39c12;
+}
+
+.unique-section {
+  margin-bottom: 12px;
+}
+
+.unique-section:last-child {
+  margin-bottom: 0;
+}
+
+.unique-section h4 {
+  font-size: 14px;
+  color: #2d3436;
+  margin-bottom: 6px;
+}
+
+/* ===== 法规检索页 ===== */
+.search-box {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  margin-bottom: 16px;
+}
+
+.search-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.search-row:last-child {
+  margin-bottom: 0;
+}
+
+.search-row input[type="text"],
+.search-row select {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid #dfe6e9;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+  color: #2d3436;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.search-row input[type="text"]:focus,
+.search-row select:focus {
+  border-color: #0984e3;
+}
+
+/* 搜索/重置按钮不拉伸 */
+.search-row .btn {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+}
+
+.search-count {
+  font-size: 13px;
+  color: #636e72;
+  margin-bottom: 10px;
+  padding-left: 4px;
+}
+
+/* 移动端:搜索行单列堆叠 */
+@media (max-width: 600px) {
+  .search-row {
+    flex-wrap: wrap;
+  }
+  .search-row input[type="text"],
+  .search-row select {
+    flex: 1 1 100%;
+  }
+  .search-row .btn {
+    flex: 1 1 auto;
+  }
+}
+
+/* ===== 成分详情弹窗 ===== */
+/* 可点击成分卡片 */
+.ingredient-clickable {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.ingredient-clickable:hover {
+  background: #f8f9fa;
+}
+
+/* 遮罩层 */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  /* outline 替代 focus 可见性(tabIndex 用法) */
+  outline: none;
+}
+
+/* 弹窗主体 */
+.modal-content {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  animation: modalSlideIn 0.2s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 关闭按钮 */
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #b2bec3;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.modal-close:hover {
+  background: #f1f2f6;
+  color: #2d3436;
+}
+
+/* 成分名 */
+.modal-title {
+  font-size: 20px;
+  color: #2d3436;
+  margin-bottom: 12px;
+  padding-right: 32px;  /* 给关闭按钮留空间 */
+}
+
+/* 标签区 */
+.modal-tags {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+/* 大号标签 */
+.tag-lg {
+  font-size: 13px !important;
+  padding: 4px 12px !important;
+}
+
+/* 区块 */
+.modal-section {
+  margin-bottom: 16px;
+}
+
+.modal-section:last-child {
+  margin-bottom: 0;
+}
+
+.modal-section h4 {
+  font-size: 14px;
+  color: #636e72;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.modal-desc {
+  font-size: 14px;
+  color: #2d3436;
+  line-height: 1.6;
+}
+
+.modal-ref {
+  font-size: 13px;
+  color: #0984e3;
+  line-height: 1.6;
+  background: #f0f4ff;
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+
+.modal-empty {
+  color: #b2bec3;
+  font-size: 14px;
+  text-align: center;
+  padding: 16px 0;
+}
+
+/* 同类成分 chips */
+.modal-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.related-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #f8f9fa;
+  border: 1px solid #f1f2f6;
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+
+.related-chip:hover {
+  background: #f0f4ff;
+  border-color: #0984e3;
+}
+
+.related-name {
+  color: #2d3436;
+}
+
+.related-risk {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+/* 风险标签颜色(复用,但 related 用文字色) */
+.related-risk.safe { color: #00b894; background: #e6fffa; }
+.related-risk.notice { color: #fdcb6e; background: #fff8e1; }
+.related-risk.caution { color: #e17055; background: #ffe8e0; }
+.related-risk.avoid { color: #d63031; background: #ffe0e0; }
+
+/* 弹窗移动端适配 */
+@media (max-width: 600px) {
+  .modal-content {
+    padding: 20px 16px;
+    max-height: 90vh;
+    border-radius: 12px 12px 0 0;
+    /* 小屏幕从底部滑出 */
+    align-self: flex-end;
+    width: 100%;
+    max-width: 100%;
+    animation: modalSlideUp 0.2s ease-out;
+  }
+
+  .modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+}
+
+@keyframes modalSlideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* ===== 评分趋势图 ===== */
+.chart-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  margin-bottom: 16px;
+}
+
+.chart-card h3 {
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.chart-summary {
+  font-size: 13px;
+  color: #636e72;
+  margin-bottom: 12px;
+}
+
+/* 趋势图移动端:缩小高度 */
+@media (max-width: 600px) {
+  .chart-card {
+    padding: 16px 12px;
+  }
+}
+
+/* ===== 移动端全面适配(< 600px)===== */
+@media (max-width: 600px) {
+  /* 页面容器:减小边距 */
+  .app {
+    padding: 16px 12px 32px;
+  }
+
+  /* 标题区 */
+  .header {
+    margin-bottom: 20px;
+  }
+  .header h1 {
+    font-size: 20px;
+  }
+  .header p {
+    font-size: 13px;
+  }
+
+  /* 顶部导航:按钮平分宽度 */
+  .topbar {
+    justify-content: stretch;
+  }
+  .topbar .link-btn {
+    flex: 1;
+    text-align: center;
+    padding: 8px 6px;
+    font-size: 13px;
+  }
+
+  /* 上传区:缩小 padding */
+  .upload-area {
+    padding: 28px 16px;
+  }
+  .upload-area p {
+    font-size: 13px;
+  }
+
+  /* 评分卡片:缩小数字字号 */
+  .score-card {
+    padding: 16px;
+  }
+  .score-number {
+    font-size: 48px;
+  }
+  .score-label {
+    font-size: 13px;
+  }
+  .summary {
+    font-size: 14px;
+  }
+
+  /* 卡片通用:缩小 padding */
+  .card {
+    padding: 16px;
+  }
+
+  /* 成分列表项:meta 标签换行到下方 */
+  .ingredient-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .ingredient-meta {
+    max-width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  /* OCR 原文:允许横向滚动,防止撑开页面 */
+  .ocr-text pre {
+    font-size: 12px;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  /* 历史记录卡片:缩小 padding 和评分圆 */
+  .history-card {
+    padding: 12px;
+    gap: 10px;
+  }
+  .history-score {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+  .history-product {
+    font-size: 14px;
+  }
+  .history-summary {
+    font-size: 12px;
+  }
+  .history-meta {
+    font-size: 11px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* 历史记录操作栏:按钮换行 */
+  .history-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .history-actions .btn {
+    flex: 1 1 auto;
+    font-size: 13px;
+  }
+
+  /* 对比评分卡片:纵向堆叠 */
+  .compare-scores {
+    flex-direction: column;
+  }
+  .compare-score-card {
+    min-width: 0;
+  }
+
+  /* 对比独有成分:标签更小 */
+  .compare-tag {
+    font-size: 12px;
+    padding: 3px 8px;
+  }
+
+  /* 通用按钮:移动端更高 */
+  .btn {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  /* 错误提示 */
+  .error {
+    font-size: 13px;
+    padding: 10px 12px;
+  }
 }

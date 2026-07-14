@@ -1,16 +1,22 @@
+# Render 后端部署配置
+# 文档:https://render.com/docs/blueprint-spec
+# 将本仓库连接到 Render 后,会自动识别此文件
+
 services:
   - type: web
-    name: rihua-ingredient-api
-    env: python
-    region: singapore
-    plan: free
+    name: ingredient-analyzer-api
+    runtime: python
     rootDir: backend
+    region: singapore  # 新加坡节点,离中国较近
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
-      - key: DEEPSEEK_API_KEY
-        sync: false
-      - key: BAIDU_API_KEY
-        sync: false
-      - key: BAIDU_Secret_Key
-        sync: false
+      - key: PYTHON_VERSION
+        value: 3.12.4
+      # 以下密钥在 Render 控制台手动填写,不要写在这里
+      # DEEPSEEK_API_KEY
+      # BAIDU_API_KEY
+      # BAIDU_Secret_Key
+    healthCheckPath: /
+    autoDeploy: true

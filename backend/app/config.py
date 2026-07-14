@@ -15,6 +15,7 @@ import sys
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 def _load_env_from_registry() -> None:
     """Windows: 若进程环境变量缺失(旧终端会话),从用户注册表补充。
 
@@ -40,8 +41,10 @@ def _load_env_from_registry() -> None:
         # 注册表读取失败不阻断启动,后续会因密钥缺失给出明确提示
         pass
 
+
 # 模块导入时执行,确保旧终端也能拿到用户级环境变量
 _load_env_from_registry()
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(extra="ignore", case_sensitive=False)
@@ -58,5 +61,6 @@ class Settings(BaseSettings):
     # 应用
     app_host: str = "127.0.0.1"
     app_port: int = 8000
+
 
 settings = Settings()

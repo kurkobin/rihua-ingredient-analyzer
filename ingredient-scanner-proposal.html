@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>成分扫一扫 — TRAE AI 创造力大赛创意提案</title>
+<style>
+  /* ===== Design System ===== */
+  :root {
+    --bg: #f7faf9;
+    --surface: #ffffff;
+    --ink: #1a2e35;
+    --muted: #6b8290;
+    --rule: #e3ebe8;
+    --accent: #00a884;
+    --accent-light: #e0f7f2;
+    --accent-dark: #007d63;
+    --gradient-start: #00a884;
+    --gradient-end: #0fb9a4;
+    --risk-safe: #22c55e;
+    --risk-caution: #f59e0b;
+    --risk-warning: #f97316;
+    --risk-danger: #ef4444;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 32px rgba(0,168,132,0.12);
+    --radius: 14px;
+    --radius-sm: 8px;
+    --maxw: 920px;
+    --font: -apple-system, "Segoe UI", "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    --mono: "SF Mono", "Fira Code", "Cascadia Code", "Consolas", monospace;
+  }
+
+  /* ===== Reset ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; font-size: 16px; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ===== Layout ===== */
+  .container { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+
+  /* ===== Hero ===== */
+  .hero {
+    position: relative;
+    background: linear-gradient(135deg, #00a884 0%, #0fb9a4 40%, #1cc7b0 100%);
+    color: #fff;
+    padding: 72px 0 64px;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -120px; right: -80px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -100px; left: -60px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .hero-inner { position: relative; z-index: 1; }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.18);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    margin-bottom: 24px;
+  }
+  .hero-badge svg { width: 14px; height: 14px; }
+  .hero h1 {
+    font-size: 2.6rem;
+    font-weight: 800;
+    line-height: 1.25;
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+  }
+  .hero h1 .dash { opacity: 0.6; font-weight: 300; margin: 0 4px; }
+  .hero .tagline {
+    font-size: 1.15rem;
+    opacity: 0.92;
+    max-width: 580px;
+    line-height: 1.7;
+  }
+  .hero-meta {
+    display: flex;
+    gap: 32px;
+    margin-top: 40px;
+    flex-wrap: wrap;
+  }
+  .hero-meta-item { display: flex; flex-direction: column; gap: 4px; }
+  .hero-meta-item .label { font-size: 12px; opacity: 0.65; text-transform: uppercase; letter-spacing: 0.08em; }
+  .hero-meta-item .value { font-size: 15px; font-weight: 600; }
+
+  /* Hero illustration */
+  .hero-art {
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.15;
+    pointer-events: none;
+  }
+  .hero-art svg { width: 320px; height: 320px; }
+
+  /* ===== Section ===== */
+  section { padding: 56px 0; }
+  .section-header { margin-bottom: 36px; }
+  .section-tag {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .section-header h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .section-header .subtitle {
+    font-size: 15px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+
+  /* ===== Cards ===== */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 28px;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+
+  /* ===== Story / Intro ===== */
+  .story-card { position: relative; overflow: hidden; }
+  .story-card .quote-mark {
+    position: absolute;
+    top: 12px; right: 20px;
+    font-size: 72px;
+    font-family: Georgia, serif;
+    color: var(--accent-light);
+    line-height: 1;
+    pointer-events: none;
+  }
+  .story-card p { position: relative; z-index: 1; font-size: 15.5px; }
+  .story-card p + p { margin-top: 14px; }
+  .story-highlight {
+    background: var(--accent-light);
+    color: var(--accent-dark);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  /* ===== User Segments ===== */
+  .user-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 14px;
+    margin-bottom: 32px;
+  }
+  .user-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: border-color 0.2s;
+  }
+  .user-chip:hover { border-color: var(--accent); }
+  .user-chip .icon-circle {
+    flex-shrink: 0;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .user-chip .icon-circle svg { width: 18px; height: 18px; color: var(--accent); }
+
+  /* Pain points */
+  .pain-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .pain-card {
+    background: #fef7f0;
+    border: 1px solid #fce8d5;
+    border-radius: var(--radius-sm);
+    padding: 20px;
+  }
+  .pain-card .pain-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: #f97316;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .pain-card h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; color: #b3470a; }
+  .pain-card p { font-size: 13.5px; color: #8a5a30; line-height: 1.6; }
+
+  /* ===== Value Section ===== */
+  .value-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .value-card {
+    border-radius: var(--radius);
+    padding: 30px;
+    position: relative;
+    overflow: hidden;
+  }
+  .value-card.social {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 1px solid #bbf7d0;
+  }
+  .value-card.business {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #bfdbfe;
+  }
+  .value-card .value-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .value-card.social .value-icon { background: #22c55e; }
+  .value-card.business .value-icon { background: #3b82f6; }
+  .value-card .value-icon svg { width: 22px; height: 22px; color: #fff; }
+  .value-card h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: 14px; }
+  .value-card.social h3 { color: #166534; }
+  .value-card.business h3 { color: #1e40af; }
+  .value-list { list-style: none; }
+  .value-list li {
+    font-size: 14px;
+    line-height: 1.7;
+    padding-left: 20px;
+    position: relative;
+    margin-bottom: 10px;
+  }
+  .value-list li::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 9px;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+  }
+  .value-card.social .value-list li { color: #15803d; }
+  .value-card.social .value-list li::before { background: #22c55e; }
+  .value-card.business .value-list li { color: #1d4ed8; }
+  .value-card.business .value-list li::before { background: #3b82f6; }
+  .value-list li strong { font-weight: 700; }
+
+  /* ===== Features ===== */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 30px 24px;
+    text-align: center;
+    transition: all 0.25s;
+    position: relative;
+  }
+  .feature-card:hover {
+    border-color: var(--accent);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-4px);
+  }
+  .feature-icon {
+    width: 64px; height: 64px;
+    margin: 0 auto 18px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--accent-light) 0%, #d1f5eb 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .feature-icon svg { width: 30px; height: 30px; color: var(--accent); }
+  .feature-card .num {
+    position: absolute;
+    top: 16px; right: 18px;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--rule);
+    font-family: var(--mono);
+  }
+  .feature-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 10px; }
+  .feature-card p { font-size: 13.5px; color: var(--muted); line-height: 1.7; }
+  .feature-tags { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+  .feature-tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 100px;
+    background: var(--accent-light);
+    color: var(--accent-dark);
+  }
+
+  /* ===== Demo Mockup ===== */
+  .demo-section { background: #f0f5f3; }
+  .demo-wrapper {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+  }
+  .demo-header {
+    background: linear-gradient(135deg, #1a2e35 0%, #2a4a52 100%);
+    color: #fff;
+    padding: 20px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .demo-header .product-name { font-size: 16px; font-weight: 600; }
+  .demo-header .demo-score {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+  .demo-header .demo-score .num { font-size: 28px; font-weight: 800; color: #fbbf24; }
+  .demo-header .demo-score .max { font-size: 14px; opacity: 0.6; }
+  .demo-body { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  .demo-left { padding: 28px; border-right: 1px solid var(--rule); }
+  .demo-right { padding: 28px; background: #fafcfc; }
+
+  .demo-summary {
+    background: var(--accent-light);
+    border-left: 4px solid var(--accent);
+    padding: 14px 16px;
+    border-radius: 0 8px 8px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent-dark);
+    margin-bottom: 20px;
+  }
+
+  /* Risk badges */
+  .risk-list { display: flex; flex-direction: column; gap: 10px; }
+  .risk-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+  }
+  .risk-badge {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 100px;
+    letter-spacing: 0.02em;
+  }
+  .risk-badge.safe { background: #dcfce7; color: #166534; }
+  .risk-badge.caution { background: #fef3c7; color: #92400e; }
+  .risk-badge.warning { background: #ffedd5; color: #9a3412; }
+  .risk-badge.danger { background: #fee2e2; color: #991b1b; }
+  .risk-item .ing-name { font-size: 13.5px; font-weight: 500; }
+  .risk-item .ing-desc { font-size: 12px; color: var(--muted); margin-left: auto; }
+
+  /* Pros & Cons */
+  .pros-cons { display: flex; flex-direction: column; gap: 16px; }
+  .pros-cons-block h4 {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .pros-cons-block.pros h4 { color: #16a34a; }
+  .pros-cons-block.cons h4 { color: #dc2626; }
+  .pros-cons-block ul { list-style: none; }
+  .pros-cons-block li {
+    font-size: 13px;
+    padding: 6px 0;
+    padding-left: 18px;
+    position: relative;
+    color: var(--ink);
+  }
+  .pros-cons-block.pros li::before {
+    content: '+';
+    position: absolute; left: 0;
+    color: #16a34a; font-weight: 700;
+  }
+  .pros-cons-block.cons li::before {
+    content: '−';
+    position: absolute; left: 0;
+    color: #dc2626; font-weight: 700;
+  }
+
+  /* Radar chart SVG container */
+  .radar-wrap { display: flex; justify-content: center; align-items: center; margin-top: 8px; }
+  .radar-wrap svg { width: 240px; height: 240px; }
+  .radar-labels { display: flex; justify-content: space-between; margin-top: 12px; padding: 0 8px; }
+  .radar-label-item { text-align: center; }
+  .radar-label-item .label { font-size: 11px; color: var(--muted); }
+  .radar-label-item .score { font-size: 14px; font-weight: 700; color: var(--accent); }
+
+  /* ===== Footer ===== */
+  footer {
+    background: #1a2e35;
+    color: #b0c4ce;
+    padding: 40px 0;
+    text-align: center;
+  }
+  footer .footer-title { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+  footer .footer-sub { font-size: 13px; opacity: 0.6; }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 768px) {
+    .hero { padding: 48px 0 40px; }
+    .hero h1 { font-size: 1.9rem; }
+    .hero .tagline { font-size: 1rem; }
+    .hero-art { display: none; }
+    .pain-grid { grid-template-columns: 1fr; }
+    .value-grid { grid-template-columns: 1fr; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .demo-body { grid-template-columns: 1fr; }
+    .demo-left { border-right: none; border-bottom: 1px solid var(--rule); }
+    section { padding: 40px 0; }
+    .section-header h2 { font-size: 1.4rem; }
+    .hero-meta { gap: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== HERO ===================== -->
+<div class="hero">
+  <div class="hero-art">
+    <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="60" y="20" width="80" height="160" rx="12" stroke="white" stroke-width="3" fill="none"/>
+      <rect x="70" y="36" width="60" height="8" rx="2" fill="white"/>
+      <rect x="70" y="52" width="60" height="44" rx="4" fill="white" fill-opacity="0.3" stroke="white" stroke-width="2"/>
+      <line x1="76" y1="64" x2="120" y2="64" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="76" y1="72" x2="110" y2="72" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="76" y1="80" x2="116" y2="80" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <line x1="76" y1="88" x2="100" y2="88" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="100" cy="130" r="20" stroke="white" stroke-width="3" fill="none"/>
+      <path d="M92 130 L98 136 L110 124" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="70" y="158" width="40" height="6" rx="3" fill="white" fill-opacity="0.5"/>
+    </svg>
+  </div>
+  <div class="container hero-inner">
+    <div class="hero-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      TRAE AI 创造力大赛 · 社会服务赛道
+    </div>
+    <h1>成分扫一扫<span class="dash">—</span>看清商品真实的样子</h1>
+    <p class="tagline">扫一扫配料表,AI 自动识别成分、分析优缺点、标注风险等级,让你在 10 秒内看清商品的真实面目。</p>
+    <div class="hero-meta">
+      <div class="hero-meta-item">
+        <span class="label">产品形态</span>
+        <span class="value">网页应用</span>
+      </div>
+      <div class="hero-meta-item">
+        <span class="label">核心技术</span>
+        <span class="value">OCR + LLM 分析</span>
+      </div>
+      <div class="hero-meta-item">
+        <span class="label">目标用户</span>
+        <span class="value">注重健康的城市消费者</span>
+      </div>
+      <div class="hero-meta-item">
+        <span class="label">社会价值</span>
+        <span class="value">消除消费信息不对称</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 创意介绍 ===================== -->
+<section>
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">01 / Creative Concept</span>
+      <h2>创意介绍</h2>
+      <p class="subtitle">一次购物经历引发的健康思考</p>
+    </div>
+    <div class="card story-card">
+      <span class="quote-mark">"</span>
+      <p>购买洗发水时,我偶然翻看成分表,发现里面含有<span class="story-highlight">月桂醇硫酸酯钠(SLS)</span>——一种清洁力极强但刺激性大的表面活性剂。这让我对自己的健康产生了担忧。更令人不安的是,买牙膏时又看到了同样的 SLS 成分。</p>
+      <p>普通消费者根本看不懂配料表上的 INCI 名、CAS 号,而商家宣传又往往回避成分问题。如果一个工具能<span class="story-highlight">"扫一扫就让客户知道自己买的产品到底是什么样的"</span>,就能彻底解决这种信息不对称。</p>
+      <p>这就是"成分扫一扫"的初衷:把专业配料表翻译成任何人都能看懂的"优点、缺点、风险等级",让每个人都能基于真实信息做出健康选择,而非被营销话术左右。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 目标用户及痛点 ===================== -->
+<section style="background: #f0f5f3;">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">02 / Target Users</span>
+      <h2>目标用户及痛点</h2>
+      <p class="subtitle">谁需要这个工具?他们面临什么困境?</p>
+    </div>
+
+    <!-- User segments -->
+    <div class="user-grid">
+      <div class="user-chip">
+        <div class="icon-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </div>
+        <span>注重健康的 25-40 岁城市消费者</span>
+      </div>
+      <div class="user-chip">
+        <div class="icon-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        </div>
+        <span>过敏体质人群</span>
+      </div>
+      <div class="user-chip">
+        <div class="icon-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>
+        </div>
+        <span>敏感肌人群</span>
+      </div>
+      <div class="user-chip">
+        <div class="icon-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z"/><path d="M9 12l2 2 4-4"/></svg>
+        </div>
+        <span>成分党</span>
+      </div>
+      <div class="user-chip">
+        <div class="icon-circle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <span>为儿童选购洗护用品的家长</span>
+      </div>
+    </div>
+
+    <!-- Usage scenarios -->
+    <div style="margin-bottom: 28px;">
+      <h3 style="font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.06em;">使用场景</h3>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <span style="background: var(--surface); border: 1px solid var(--rule); border-radius: 100px; padding: 6px 18px; font-size: 13.5px; font-weight: 500;">超市选购时现场扫描</span>
+        <span style="background: var(--surface); border: 1px solid var(--rule); border-radius: 100px; padding: 6px 18px; font-size: 13.5px; font-weight: 500;">网购前对比不同产品</span>
+        <span style="background: var(--surface); border: 1px solid var(--rule); border-radius: 100px; padding: 6px 18px; font-size: 13.5px; font-weight: 500;">回购决策时快速确认</span>
+      </div>
+    </div>
+
+    <!-- Pain points -->
+    <h3 style="font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.06em;">当前痛点</h3>
+    <div class="pain-grid">
+      <div class="pain-card">
+        <span class="pain-num">1</span>
+        <h4>配料表专业难懂</h4>
+        <p>INCI 命名、CAS 号等术语对普通消费者如同天书,完全无法判断成分好坏。</p>
+      </div>
+      <div class="pain-card">
+        <span class="pain-num">2</span>
+        <h4>宣传与实际不符</h4>
+        <p>商家宣传往往回避敏感成分,消费者被"温和""天然"等话术误导。</p>
+      </div>
+      <div class="pain-card">
+        <span class="pain-num">3</span>
+        <h4>同类产品难对比</h4>
+        <p>不同品牌配料表格式不一,逐项手动比较费时费力,几乎无法高效决策。</p>
+      </div>
+      <div class="pain-card">
+        <span class="pain-num">4</span>
+        <h4>决策耗时数十分钟</h4>
+        <p>查资料、搜评价、对比成分,一次购物决策动辄花费 20-30 分钟。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 价值与意义 ===================== -->
+<section>
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">03 / Value & Impact</span>
+      <h2>价值与意义</h2>
+      <p class="subtitle">社会价值与商业价值的双重驱动</p>
+    </div>
+    <div class="value-grid">
+      <div class="value-card social">
+        <div class="value-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3>社会价值</h3>
+        <ul class="value-list">
+          <li><strong>消除消费信息不对称</strong>,让健康选择不再依赖专业知识门槛</li>
+          <li>把专业配料表翻译成<strong>"优点 / 缺点 / 风险等级"</strong>的人话表达</li>
+          <li>让任何人在<strong>10 秒内</strong>看清商品真实情况,做出知情决策</li>
+          <li>让每个人都能基于<strong>真实信息</strong>做出健康选择,而非被营销话术左右</li>
+        </ul>
+      </div>
+      <div class="value-card business">
+        <div class="value-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <h3>商业价值</h3>
+        <ul class="value-list">
+          <li><strong>导购佣金</strong>:推荐无风险成分替代品,获取电商导购收益</li>
+          <li><strong>会员订阅</strong>:高级成分分析、历史扫描记录等增值功能</li>
+          <li><strong>B 端 API</strong>:为零售商提供成分分析能力,开放数据接口</li>
+          <li><strong>数据飞轮</strong>:用户扫描 → 数据积累 → 分析更准 → 更多用户</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 核心功能 ===================== -->
+<section style="background: #f0f5f3;">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">04 / Core Features</span>
+      <h2>核心功能</h2>
+      <p class="subtitle">从扫描到决策,三步看清商品真相</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <span class="num">01</span>
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/><line x1="9" y1="6" x2="15" y2="6"/><line x1="9" y1="18" x2="15" y2="18"/><line x1="6" y1="9" x2="6" y2="15"/><line x1="18" y1="9" x2="18" y2="15"/></svg>
+        </div>
+        <h3>扫一扫配料表</h3>
+        <p>用户上传商品背面配料表图片,系统通过 OCR 技术精准识别中英混合配料表文字,自动提取全部成分信息。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">OCR 识别</span>
+          <span class="feature-tag">中英混合</span>
+          <span class="feature-tag">拍照上传</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <span class="num">02</span>
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11H1l3-3M1 11l3 3M15 13h8l-3-3M23 13l-3 3M12 2v20"/></svg>
+        </div>
+        <h3>成分分析与优缺点提炼</h3>
+        <p>AI 自动对成分分类(表面活性剂 / 防腐剂 / 活性物等),标注风险等级,生成通俗易懂的产品优缺点总结。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">智能分类</span>
+          <span class="feature-tag">风险等级</span>
+          <span class="feature-tag">优缺点</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <span class="num">03</span>
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </div>
+        <h3>综合评分与可读化呈现</h3>
+        <p>生成 0-100 综合评分,配合多维度雷达图直观展示,一句话总结产品核心特征,让决策一目了然。</p>
+        <div class="feature-tags">
+          <span class="feature-tag">0-100 评分</span>
+          <span class="feature-tag">雷达图</span>
+          <span class="feature-tag">一句话总结</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 产品概念展示 ===================== -->
+<section class="demo-section">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">05 / Product Demo</span>
+      <h2>产品概念展示</h2>
+      <p class="subtitle">以某洗发水为例,展示"成分扫一扫"的分析结果</p>
+    </div>
+
+    <div class="demo-wrapper">
+      <!-- Demo header -->
+      <div class="demo-header">
+        <span class="product-name">XX 滋养洗发水 · 配料表分析结果</span>
+        <div class="demo-score">
+          <span class="num">62</span>
+          <span class="max">/ 100</span>
+        </div>
+      </div>
+
+      <div class="demo-body">
+        <!-- Left: Summary + Risk list -->
+        <div class="demo-left">
+          <div class="demo-summary">
+            清洁力强但含刺激性成分,敏感肌和儿童慎用,建议选择氨基酸系替代品。
+          </div>
+
+          <h4 style="font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.06em;">成分风险分析</h4>
+          <div class="risk-list">
+            <div class="risk-item">
+              <span class="risk-badge danger">慎用</span>
+              <span class="ing-name">月桂醇硫酸酯钠 (SLS)</span>
+              <span class="ing-desc">强刺激表面活性剂</span>
+            </div>
+            <div class="risk-item">
+              <span class="risk-badge warning">注意</span>
+              <span class="ing-name">甲基异噻唑啉酮 (MIT)</span>
+              <span class="ing-desc">致敏防腐剂</span>
+            </div>
+            <div class="risk-item">
+              <span class="risk-badge caution">注意</span>
+              <span class="ing-name">香精 (Fragrance)</span>
+              <span class="ing-desc">潜在致敏源</span>
+            </div>
+            <div class="risk-item">
+              <span class="risk-badge safe">安全</span>
+              <span class="ing-name">椰油酰胺丙基甜菜碱</span>
+              <span class="ing-desc">温和表面活性剂</span>
+            </div>
+            <div class="risk-item">
+              <span class="risk-badge safe">安全</span>
+              <span class="ing-name">泛醇 (维生素 B5)</span>
+              <span class="ing-desc">修护活性物</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Pros/Cons + Radar -->
+        <div class="demo-right">
+          <div class="pros-cons">
+            <div class="pros-cons-block pros">
+              <h4>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                优点
+              </h4>
+              <ul>
+                <li>清洁力强,去油效果好</li>
+                <li>含泛醇(维生素 B5),有修护作用</li>
+                <li>含温和表面活性剂辅助清洁</li>
+              </ul>
+            </div>
+            <div class="pros-cons-block cons">
+              <h4>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                缺点
+              </h4>
+              <ul>
+                <li>含 SLS,刺激性大,敏感肌慎用</li>
+                <li>含 MIT 防腐剂,有致敏风险</li>
+                <li>含香精,可能引起过敏反应</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Radar chart -->
+          <div class="radar-wrap" style="margin-top: 20px;">
+            <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+              <!-- Background grid -->
+              <g stroke="#e3ebe8" stroke-width="1" fill="none">
+                <polygon points="120,30 198,75 198,165 120,210 42,165 42,75"/>
+                <polygon points="120,52.5 178.5,86.25 178.5,153.75 120,187.5 61.5,153.75 61.5,86.25"/>
+                <polygon points="120,75 159,97.5 159,142.5 120,165 81,142.5 81,97.5"/>
+                <polygon points="120,97.5 139.5,108.75 139.5,131.25 120,142.5 100.5,131.25 100.5,108.75"/>
+              </g>
+              <!-- Axes -->
+              <g stroke="#e3ebe8" stroke-width="1">
+                <line x1="120" y1="30" x2="120" y2="210"/>
+                <line x1="42" y1="75" x2="198" y2="165"/>
+                <line x1="42" y1="165" x2="198" y2="75"/>
+              </g>
+              <!-- Data polygon -->
+              <polygon points="120,48 176,86 170,158 120,195 62,148 56,80"
+                fill="rgba(0,168,132,0.15)" stroke="#00a884" stroke-width="2" stroke-linejoin="round"/>
+              <!-- Data points -->
+              <g fill="#00a884">
+                <circle cx="120" cy="48" r="3.5"/>
+                <circle cx="176" cy="86" r="3.5"/>
+                <circle cx="170" cy="158" r="3.5"/>
+                <circle cx="120" cy="195" r="3.5"/>
+                <circle cx="62" cy="148" r="3.5"/>
+                <circle cx="56" cy="80" r="3.5"/>
+              </g>
+              <!-- Labels -->
+              <g font-family="-apple-system, sans-serif" font-size="11" fill="#6b8290" text-anchor="middle" font-weight="600">
+                <text x="120" y="20">安全性</text>
+                <text x="214" y="72">温和度</text>
+                <text x="214" y="172">环保性</text>
+                <text x="120" y="226">性价比</text>
+                <text x="26" y="172">透明度</text>
+                <text x="26" y="72">功效性</text>
+              </g>
+            </svg>
+          </div>
+          <div class="radar-labels">
+            <div class="radar-label-item"><span class="label">安全性</span><br><span class="score" style="color: #ef4444;">45</span></div>
+            <div class="radar-label-item"><span class="label">温和度</span><br><span class="score" style="color: #f97316;">52</span></div>
+            <div class="radar-label-item"><span class="label">功效性</span><br><span class="score" style="color: #22c55e;">85</span></div>
+            <div class="radar-label-item"><span class="label">性价比</span><br><span class="score" style="color: #22c55e;">78</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Risk legend -->
+    <div style="display: flex; gap: 20px; justify-content: center; margin-top: 24px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 8px;"><span class="risk-badge safe" style="display: inline-block;">安全</span><span style="font-size: 13px; color: var(--muted);">可放心使用</span></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><span class="risk-badge caution" style="display: inline-block;">注意</span><span style="font-size: 13px; color: var(--muted);">敏感人群留意</span></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><span class="risk-badge warning" style="display: inline-block;">慎用</span><span style="font-size: 13px; color: var(--muted);">有明确风险</span></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><span class="risk-badge danger" style="display: inline-block;">规避</span><span style="font-size: 13px; color: var(--muted);">建议避免</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== Footer ===================== -->
+<footer>
+  <div class="container">
+    <div class="footer-title">成分扫一扫 — 看清商品真实的样子</div>
+    <p class="footer-sub">TRAE AI 创造力大赛 · 社会服务赛道 · 创意提案</p>
+  </div>
+</footer>
+
+</body>
+</html>

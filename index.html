@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>成分扫一扫 - 看清商品真实的样子</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: #f5f6fa;
+      color: #2d3436;
+      line-height: 1.6;
+    }
+
+    .app {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      color: #2d3436;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      font-size: 14px;
+      color: #636e72;
+    }
+
+    .upload-area {
+      background: #fff;
+      border: 2px dashed #dfe6e9;
+      border-radius: 12px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .upload-area:hover {
+      border-color: #0984e3;
+      background: #f8faff;
+    }
+
+    .upload-area.has-image {
+      padding: 16px;
+      border-style: solid;
+    }
+
+    .upload-area img {
+      max-width: 100%;
+      max-height: 320px;
+      border-radius: 8px;
+    }
+
+    .upload-tip {
+      color: #636e72;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    .upload-icon {
+      font-size: 40px;
+      color: #b2bec3;
+      margin-bottom: 12px;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 16px;
+    }
+
+    .btn-primary {
+      background: #0984e3;
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #0873c4;
+    }
+
+    .btn-primary:disabled {
+      background: #b2bec3;
+      cursor: not-allowed;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #636e72;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 32px;
+      height: 32px;
+      border: 3px solid #dfe6e9;
+      border-top-color: #0984e3;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 12px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error {
+      background: #ffeaea;
+      color: #d63031;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-top: 16px;
+      font-size: 14px;
+    }
+
+    .result {
+      margin-top: 24px;
+    }
+
+    .score-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .score-number {
+      font-size: 48px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .score-number.good { color: #00b894; }
+    .score-number.mid { color: #fdcb6e; }
+    .score-number.bad { color: #d63031; }
+
+    .score-label {
+      font-size: 14px;
+      color: #636e72;
+      margin-top: 4px;
+    }
+
+    .summary {
+      margin-top: 12px;
+      color: #2d3436;
+      font-size: 15px;
+    }
+
+    .pros-cons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 600px) {
+      .pros-cons {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .card h3 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card.pros h3 { color: #00b894; }
+    .card.cons h3 { color: #d63031; }
+
+    .card ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .card li {
+      font-size: 14px;
+      padding: 6px 0;
+      border-bottom: 1px solid #f1f2f6;
+    }
+
+    .card li:last-child {
+      border-bottom: none;
+    }
+
+    .ingredient-list {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .ingredient-list h3 {
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
+
+    .ingredient-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #f1f2f6;
+      font-size: 14px;
+    }
+
+    .ingredient-item:last-child {
+      border-bottom: none;
+    }
+
+    .ingredient-name {
+      font-weight: 500;
+    }
+
+    .ingredient-meta {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .tag {
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .tag.safe { background: #e6fffa; color: #00b894; }
+    .tag.notice { background: #fff9e6; color: #f39c12; }
+    .tag.caution { background: #fff0f0; color: #d63031; }
+    .tag.avoid { background: #ffe0e0; color: #c0392b; }
+    .tag.unknown { background: #f1f2f6; color: #636e72; }
+
+    .ocr-text {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .ocr-text h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .ocr-text pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+      font-size: 13px;
+      color: #636e72;
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 6px;
+    }
+
+    .demo-tip {
+      background: #e8f4fd;
+      color: #0984e3;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .loading-steps {
+      font-size: 14px;
+      line-height: 2;
+      color: #636e72;
+    }
+
+    .loading-tip {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #b2bec3;
+    }
+
+    .compress-info {
+      background: #e6fffa;
+      color: #00b894;
+      padding: 8px 16px;
+      border-radius: 8px;
+      margin-top: 8px;
+      font-size: 13px;
+      text-align: center;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1>成分扫一扫</h1>
+      <p>上传商品配料表图片，看清商品真实的样子</p>
+    </header>
+
+    <div class="demo-tip">
+      💡 演示版本：点击"开始分析"可查看示例分析效果
+    </div>
+
+    <div class="upload-area" id="uploadArea">
+      <div class="upload-icon">📷</div>
+      <div class="upload-tip">点击或拖拽上传配料表图片</div>
+      <input type="file" id="fileInput" accept="image/*" style="display: none" />
+    </div>
+
+    <button class="btn btn-primary" id="analyzeBtn" disabled>开始分析</button>
+
+    <div class="error" id="errorBox" style="display: none"></div>
+
+    <div class="compress-info" id="compressInfo"></div>
+
+    <div class="loading" id="loadingBox" style="display: none">
+      <div class="spinner"></div>
+      <div class="loading-steps">
+        <div>正在压缩图片...</div>
+        <div>正在 OCR 识别文字...</div>
+        <div>正在分析成分...</div>
+      </div>
+      <div class="loading-tip">分析约需 10-30 秒，请耐心等待</div>
+    </div>
+
+    <div class="result" id="resultBox" style="display: none">
+      <div class="score-card">
+        <div class="score-number" id="scoreNumber">72</div>
+        <div class="score-label">综合评分（满分100）</div>
+        <div class="summary" id="summaryText"></div>
+      </div>
+
+      <div class="pros-cons">
+        <div class="card pros">
+          <h3>✅ 优点</h3>
+          <ul id="prosList"></ul>
+        </div>
+        <div class="card cons">
+          <h3>⚠️ 缺点</h3>
+          <ul id="consList"></ul>
+        </div>
+      </div>
+
+      <div class="ingredient-list">
+        <h3>成分列表（<span id="ingredientCount">0</span>项）</h3>
+        <div id="ingredientList"></div>
+      </div>
+
+      <div class="ocr-text">
+        <h3>识别原文</h3>
+        <pre id="ocrText"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const errorBox = document.getElementById('errorBox');
+    const loadingBox = document.getElementById('loadingBox');
+    const resultBox = document.getElementById('resultBox');
+
+    let currentImage = null;
+    let originalFileSize = 0;
+
+    // 图片压缩:大图压缩后避免 OCR 超时
+    // 目标:长边不超过 1600px,质量 0.8
+    function compressImage(file) {
+      const MAX_WIDTH = 1600;
+      const MAX_HEIGHT = 1600;
+      const QUALITY = 0.8;
+
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = new Image();
+          img.onload = function() {
+            let width = img.width;
+            let height = img.height;
+            if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+              const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
+              width = Math.round(width * ratio);
+              height = Math.round(height * ratio);
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              reject(new Error('无法创建 canvas 上下文'));
+              return;
+            }
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob(
+              function(blob) {
+                if (blob) resolve(blob);
+                else reject(new Error('图片压缩失败'));
+              },
+              'image/jpeg',
+              QUALITY
+            );
+          };
+          img.onerror = function() { reject(new Error('图片加载失败')); };
+          img.src = e.target.result;
+        };
+        reader.onerror = function() { reject(new Error('文件读取失败')); };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+      return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+    }
+
+    const RISK_TAG = {
+      '安全': { cls: 'safe', label: '安全' },
+      '注意': { cls: 'notice', label: '注意' },
+      '慎用': { cls: 'caution', label: '慎用' },
+      '规避': { cls: 'avoid', label: '规避' },
+    };
+
+    const demoResult = {
+      ocr_text: `山梨(糖)醇
+水
+水合硅石
+月桂醇硫酸酯钠
+香精
+纤维素胶
+氟化钠(0.24%)
+糖精钠
+羟苯甲酯
+羟苯丙酯
+CI 19140`,
+      ingredients: [
+        { name: '山梨醇', category: '保湿剂', risk_level: '安全', description: '温和保湿剂，提供甜味', in_database: true },
+        { name: '水', category: '溶剂', risk_level: '安全', description: '溶剂', in_database: true },
+        { name: '水合硅石', category: '研磨剂', risk_level: '安全', description: '二氧化硅，常用研磨剂', in_database: true },
+        { name: '月桂醇硫酸酯钠', category: '表面活性剂', risk_level: '慎用', description: '即 SLS/K12，清洁力极强，刺激性较大，可能引起皮肤干燥、敏感，口腔黏膜可能受刺激', in_database: true },
+        { name: '香精', category: '香精', risk_level: '注意', description: '致敏源之一，敏感肌注意', in_database: true },
+        { name: '纤维素胶', category: '增稠剂', risk_level: '安全', description: '增稠稳定剂', in_database: false },
+        { name: '氟化钠', category: '防龋成分', risk_level: '安全', description: '预防蛀牙的有效成分，适量使用安全', in_database: true },
+        { name: '糖精钠', category: '甜味剂', risk_level: '注意', description: '人工甜味剂', in_database: false },
+        { name: '羟苯甲酯', category: '防腐剂', risk_level: '慎用', description: '尼泊金酯类防腐剂，有内分泌干扰争议', in_database: true },
+        { name: '羟苯丙酯', category: '防腐剂', risk_level: '慎用', description: '尼泊金酯类防腐剂，有争议', in_database: false },
+        { name: 'CI 19140', category: '色素', risk_level: '安全', description: '黄色色素', in_database: true },
+      ],
+      pros: [
+        '含氟化钠，有助于预防蛀牙',
+        '含水合硅石作为研磨剂，清洁牙齿同时相对温和',
+        '含山梨醇，口感较好且有一定保湿作用',
+      ],
+      cons: [
+        '含有月桂醇硫酸酯钠(SLS)，清洁力强但刺激性较大，长期使用可能导致口腔黏膜不适',
+        '含有尼泊金酯类防腐剂(羟苯甲酯、羟苯丙酯)，存在内分泌干扰争议',
+        '添加了香精，可能引起过敏反应',
+      ],
+      score: 58,
+      summary: '这是一款含氟牙膏，防蛀效果有保障，但使用了刺激性较强的SLS作为表面活性剂，且含有争议性防腐剂，敏感人群建议谨慎选择。',
+    };
+
+    uploadArea.addEventListener('click', () => fileInput.click());
+
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const file = e.dataTransfer.files?.[0];
+      if (file) handleFile(file);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (file) handleFile(file);
+    });
+
+    function handleFile(file) {
+      if (!file.type.startsWith('image/')) {
+        showError('请上传图片文件');
+        return;
+      }
+      originalFileSize = file.size;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        currentImage = e.target.result;
+        uploadArea.classList.add('has-image');
+        uploadArea.innerHTML = `<img src="${currentImage}" alt="配料表预览" />`;
+        uploadArea.addEventListener('click', () => fileInput.click());
+        analyzeBtn.disabled = false;
+        hideError();
+        resultBox.style.display = 'none';
+
+        // 显示文件大小信息
+        const compressInfo = document.getElementById('compressInfo');
+        compressInfo.textContent = '📁 原始图片大小: ' + formatSize(originalFileSize) + '（分析时将自动压缩）';
+        compressInfo.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    analyzeBtn.addEventListener('click', () => {
+      if (!currentImage) return;
+      loadingBox.style.display = 'block';
+      resultBox.style.display = 'none';
+      hideError();
+      analyzeBtn.disabled = true;
+
+      setTimeout(() => {
+        loadingBox.style.display = 'none';
+        analyzeBtn.disabled = false;
+        showResult(demoResult);
+      }, 2000);
+    });
+
+    function showResult(data) {
+      resultBox.style.display = 'block';
+
+      const scoreEl = document.getElementById('scoreNumber');
+      scoreEl.textContent = data.score;
+      scoreEl.className = 'score-number ' + (
+        data.score >= 86 ? 'good' : data.score >= 60 ? 'mid' : 'bad'
+      );
+
+      document.getElementById('summaryText').textContent = data.summary;
+
+      const prosList = document.getElementById('prosList');
+      prosList.innerHTML = data.pros.length > 0
+        ? data.pros.map(p => `<li>${p}</li>`).join('')
+        : '<div style="color: #b2bec3; font-size: 14px">暂未发现明显优点</div>';
+
+      const consList = document.getElementById('consList');
+      consList.innerHTML = data.cons.length > 0
+        ? data.cons.map(c => `<li>${c}</li>`).join('')
+        : '<div style="color: #b2bec3; font-size: 14px">未发现明显缺点</div>';
+
+      document.getElementById('ingredientCount').textContent = data.ingredients.length;
+
+      const ingList = document.getElementById('ingredientList');
+      ingList.innerHTML = data.ingredients.map(ing => {
+        const tag = ing.risk_level ? RISK_TAG[ing.risk_level] : null;
+        let metaHtml = '';
+        if (ing.category) {
+          metaHtml += `<span class="tag unknown">${ing.category}</span>`;
+        }
+        if (tag) {
+          metaHtml += `<span class="tag ${tag.cls}">${tag.label}</span>`;
+        } else if (!ing.in_database) {
+          metaHtml += `<span class="tag unknown">未入库</span>`;
+        }
+        return `
+          <div class="ingredient-item">
+            <div>
+              <div class="ingredient-name">${ing.name}</div>
+              ${ing.description ? `<div style="font-size: 12px; color: #636e72; margin-top: 2px">${ing.description}</div>` : ''}
+            </div>
+            <div class="ingredient-meta">${metaHtml}</div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('ocrText').textContent = data.ocr_text;
+    }
+
+    function showError(msg) {
+      errorBox.textContent = '⚠️ ' + msg;
+      errorBox.style.display = 'block';
+    }
+
+    function hideError() {
+      errorBox.style.display = 'none';
+    }
+  </script>
+</body>
+</html>
