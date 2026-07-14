@@ -6,7 +6,7 @@ import AllergenSettings from './AllergenSettings'
 
 // ===== API 基础地址 =====
 // 本地开发:走 Vite 代理(相对路径 /api)
-// 生产环境(Vercel):直接调用 Render 后端地址
+// 生产环境(Vercel):读取环境变量 VITE_API_BASE,指向 Railway 后端地址
 const API_BASE = import.meta.env.VITE_API_BASE || ''
 
 // ===== 图片压缩 =====
