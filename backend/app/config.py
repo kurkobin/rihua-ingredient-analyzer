@@ -59,8 +59,9 @@ class Settings(BaseSettings):
     baidu_secret_key: str = Field(default="", validation_alias="BAIDU_Secret_Key")
 
     # 应用
-    app_host: str = "127.0.0.1"
-    app_port: int = 8000
+    # Railway 部署时会注入 PORT 环境变量,优先读取;本地默认 8000
+    app_host: str = "0.0.0.0"
+    app_port: int = Field(default=8000, validation_alias="PORT")
 
 
 settings = Settings()
