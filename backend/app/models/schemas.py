@@ -27,6 +27,26 @@ class AnalysisResult(BaseModel):
     product_type: str = ""  # 产品品类(洗发水/牙膏/沐浴露等)
 
 
+class InteractionWarning(BaseModel):
+    """成分相互作用预警"""
+    ingredient_a: str  # 成分A(命中的实际成分名)
+    ingredient_b: str  # 成分B(命中的实际成分名)
+    reason: str  # 冲突原因
+    severity: str  # "高" / "中"
+
+
+class AllergenAlert(BaseModel):
+    """过敏原预警"""
+    ingredient_name: str  # 命中的过敏成分名
+
+
+class AlternativeSuggestion(BaseModel):
+    """成分替代建议"""
+    original: str  # 原成分(慎用/规避)
+    reason: str  # 需要替代的原因
+    alternatives: list[str]  # 推荐替代成分列表
+
+
 class AnalysisResponse(BaseModel):
     """分析接口返回"""
     ocr_text: str
@@ -37,6 +57,9 @@ class AnalysisResponse(BaseModel):
     summary: str
     product_type: str = ""  # 产品品类
     history_id: int | None = None  # 历史记录 id(用于导出 PDF)
+    interactions: list[InteractionWarning] = []  # 成分冲突预警
+    allergen_alerts: list[AllergenAlert] = []  # 过敏原预警
+    alternatives: list[AlternativeSuggestion] = []  # 替代建议
 
 
 class HistoryItem(BaseModel):
@@ -94,3 +117,16 @@ class IngredientSearchResponse(BaseModel):
     total: int  # 命中总数
     items: list[IngredientSearchItem]
     categories: list[str] = []  # 全部分类(用于前端下拉)
+
+
+class AllergenItem(BaseModel):
+    """过敏原档案项"""
+    id: int
+    ingredient_name: str
+    created_at: str
+
+
+class AllergenListResponse(BaseModel):
+    """过敏原列表接口返回"""
+    items: list[AllergenItem]
+    total: int

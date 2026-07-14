@@ -1,6 +1,8 @@
 import { useState, useRef, useMemo, useEffect } from 'react'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
 import History from './History'
 import IngredientSearch from './IngredientSearch'
+import AllergenSettings from './AllergenSettings'
 
 // ===== API 基础地址 =====
 // 本地开发:走 Vite 代理(相对路径 /api)
@@ -65,6 +67,23 @@ interface IngredientInfo {
   reference: string | null
 }
 
+interface InteractionWarning {
+  ingredient_a: string
+  ingredient_b: string
+  reason: string
+  severity: string  // "高" / "中"
+}
+
+interface AllergenAlert {
+  ingredient_name: string
+}
+
+interface AlternativeSuggestion {
+  original: string
+  reason: string
+  alternatives: string[]
+}
+
 interface AnalysisResponse {
   ocr_text: string
   ingredients: IngredientInfo[]
@@ -74,6 +93,9 @@ interface AnalysisResponse {
   summary: string
   product_type: string
   history_id?: number  // 历史记录 id(用于导出 PDF)
+  interactions?: InteractionWarning[]  // 成分冲突预警
+  allergen_alerts?: AllergenAlert[]  // 过敏原预警
+  alternatives?: AlternativeSuggestion[]  // 替代建议
 }
 
 // ===== 风险等级 -> 标签样式映射 =====
@@ -115,8 +137,8 @@ function App() {
   const [result, setResult] = useState<AnalysisResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  // 页面切换:home=首页扫描,history=历史记录,search=法规检索
-  const [page, setPage] = useState<'home' | 'history' | 'search'>('home')
+  // 页面切换:home=首页扫描,history=历史记录,search=法规检索,allergen=过敏原设置
+  const [page, setPage] = useState<'home' | 'history' | 'search' | 'allergen'>('home')
 
   // ===== 成分筛选状态(结果页) =====
   const [filterRisk, setFilterRisk] = useState<string>('all')  // 风险等级
@@ -252,6 +274,34 @@ function App() {
     ? result.score >= 86 ? 'good' : result.score >= 60 ? 'mid' : 'bad'
     : 'mid'
 
+  // 评分等级文字说明
+  const scoreGrade = result
+    ? result.score >= 86
+      ? { label: '优秀', desc: '成分安全温和,推荐使用', color: '#00b894' }
+      : result.score >= 76
+      ? { label: '良好', desc: '成分整体不错,可放心使用', color: '#0984e3' }
+      : result.score >= 60
+      ? { label: '一般', desc: '部分成分需留意,按需选择', color: '#fdcb6e' }
+      : { label: '不推荐', desc: '含有较多风险成分,建议谨慎', color: '#d63031' }
+    : null
+
+  // 成分风险分布(饼图数据)
+  const riskDistribution = useMemo(() => {
+    if (!result) return []
+    const counts: Record<string, number> = { 安全: 0, 注意: 0, 慎用: 0, 规避: 0 }
+    result.ingredients.forEach(ing => {
+      if (ing.risk_level && counts[ing.risk_level] !== undefined) {
+        counts[ing.risk_level]++
+      }
+    })
+    return [
+      { name: '安全', value: counts['安全'], color: '#00b894' },
+      { name: '注意', value: counts['注意'], color: '#fdcb6e' },
+      { name: '慎用', value: counts['慎用'], color: '#e17055' },
+      { name: '规避', value: counts['规避'], color: '#d63031' },
+    ].filter(item => item.value > 0)
+  }, [result])
+
   // 查看历史详情(从历史记录页返回时,把 JSON 解析成结果展示)
   const handleViewHistory = (resultJson: string, historyId: number) => {
     try {
@@ -310,6 +360,11 @@ function App() {
     return <IngredientSearch onBack={() => setPage('home')} />
   }
 
+  // 过敏原设置页
+  if (page === 'allergen') {
+    return <AllergenSettings onBack={() => setPage('home')} />
+  }
+
   return (
     <div className="app">
       <header className="header">
@@ -317,7 +372,7 @@ function App() {
         <p>上传商品配料表图片,看清商品真实的样子</p>
       </header>
 
-      {/* 顶部导航:历史记录 + 法规检索 */}
+      {/* 顶部导航:历史记录 + 法规检索 + 过敏原 */}
       <div className="topbar">
         <button className="link-btn" onClick={() => setPage('history')}>
           📋 历史记录
@@ -325,7 +380,39 @@ function App() {
         <button className="link-btn" onClick={() => setPage('search')}>
           🔍 法规检索
         </button>
+        <button className="link-btn" onClick={() => setPage('allergen')}>
+          ⚠️ 过敏原
+        </button>
       </div>
+
+      {/* 产品理念横幅(仅首页未分析时显示) */}
+      {!result && !loading && (
+        <>
+          <div className="hero-banner">
+            <div className="hero-slogan">看清商品真实的样子</div>
+            <div className="hero-desc">
+              帮你识别 264 种成分,做出明智选择。拍照上传配料表,
+              30 秒看懂优缺点、风险预警与替代建议。
+            </div>
+          </div>
+
+          {/* 数据统计卡片 */}
+          <div className="stats-cards">
+            <div className="stat-card">
+              <div className="stat-number">264</div>
+              <div className="stat-label">种成分收录</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-number">8</div>
+              <div className="stat-label">大法规来源</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-number">10</div>
+              <div className="stat-label">类产品覆盖</div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* 上传区 */}
       <div
@@ -386,8 +473,53 @@ function App() {
             )}
             <div className={`score-number ${scoreClass}`}>{result.score}</div>
             <div className="score-label">综合评分(满分100)</div>
+            {/* 评分等级说明 */}
+            {scoreGrade && (
+              <div className="score-grade" style={{ color: scoreGrade.color }}>
+                <span className="grade-label">{scoreGrade.label}</span>
+                <span className="grade-desc">{scoreGrade.desc}</span>
+              </div>
+            )}
             <div className="summary">{result.summary}</div>
           </div>
+
+          {/* 成分风险分布饼图 */}
+          {riskDistribution.length > 0 && (
+            <div className="risk-chart-card">
+              <h3>📊 成分风险分布</h3>
+              <div className="risk-chart-wrapper">
+                <ResponsiveContainer width="100%" height={240}>
+                  <PieChart>
+                    <Pie
+                      data={riskDistribution}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      label={(entry) => `${entry.name} ${entry.value}`}
+                    >
+                      {riskDistribution.map((entry, idx) => (
+                        <Cell key={idx} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value) => [`${value} 项`, '数量']}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="risk-chart-legend">
+                {riskDistribution.map(item => (
+                  <span key={item.name} className="legend-item">
+                    <span className="legend-dot" style={{ background: item.color }}></span>
+                    {item.name}: {item.value} 项
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* 优缺点 */}
           <div className="pros-cons">
@@ -412,6 +544,65 @@ function App() {
               )}
             </div>
           </div>
+
+          {/* ===== 智能预警区(优缺点之后,成分列表之前) ===== */}
+          {/* 成分相互作用预警 */}
+          {result.interactions && result.interactions.length > 0 && (
+            <div className="alert-section alert-interactions">
+              <h3>⚠️ 成分相互作用预警</h3>
+              <p className="alert-desc">以下成分组合同时使用可能产生不良反应</p>
+              {result.interactions.map((w, i) => (
+                <div key={i} className={`alert-item alert-severity-${w.severity === '高' ? 'high' : 'mid'}`}>
+                  <div className="alert-title">
+                    <span className="alert-pair">{w.ingredient_a}</span>
+                    <span className="alert-plus">+</span>
+                    <span className="alert-pair">{w.ingredient_b}</span>
+                    <span className={`alert-badge alert-badge-${w.severity === '高' ? 'high' : 'mid'}`}>{w.severity}风险</span>
+                  </div>
+                  <div className="alert-reason">{w.reason}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 过敏原预警 */}
+          {result.allergen_alerts && result.allergen_alerts.length > 0 && (
+            <div className="alert-section alert-allergens">
+              <h3>🚫 过敏原预警</h3>
+              <p className="alert-desc">该产品含有你标记的过敏成分</p>
+              {result.allergen_alerts.map((a, i) => (
+                <div key={i} className="alert-item alert-allergen-item">
+                  <span className="allergen-name">{a.ingredient_name}</span>
+                  <button
+                    className="link-btn-sm"
+                    onClick={() => setPage('allergen')}
+                  >
+                    管理过敏原
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 成分替代建议 */}
+          {result.alternatives && result.alternatives.length > 0 && (
+            <div className="alert-section alert-alternatives">
+              <h3>💡 更温和的替代建议</h3>
+              <p className="alert-desc">以下成分有更温和的替代选择</p>
+              {result.alternatives.map((alt, i) => (
+                <div key={i} className="alert-item alert-alt-item">
+                  <div className="alt-original">{alt.original}</div>
+                  <div className="alt-reason">{alt.reason}</div>
+                  <div className="alt-suggestions">
+                    <span className="alt-label">建议替代:</span>
+                    {alt.alternatives.map(name => (
+                      <span key={name} className="alt-chip">{name}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* 成分列表(显示全部) */}
           <div className="ingredient-list">
@@ -538,6 +729,29 @@ function App() {
           onSelect={(ing) => setSelectedIngredient(ing)}
         />
       )}
+
+      {/* 页脚 */}
+      <footer className="footer">
+        <div className="footer-section">
+          <h4>📚 数据来源</h4>
+          <p>《化妆品安全技术规范》(2015版)、《牙膏用原料规范》GB 22115-2008、CIR 评估报告、IFRA 标准、欧盟化妆品法规</p>
+        </div>
+        <div className="footer-section">
+          <h4>⚠️ 免责声明</h4>
+          <p>本工具分析结果仅供参考,不替代专业医疗建议。成分风险等级基于公开法规和评估数据,实际使用感受因人而异。如有严重过敏史,请咨询专业医生。</p>
+        </div>
+        <div className="footer-bottom">
+          <span>成分扫一扫 · 日化洗护成分分析工具</span>
+          <a
+            href="https://github.com/kurkobin/rihua-ingredient-analyzer"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer-link"
+          >
+            🐙 GitHub 仓库
+          </a>
+        </div>
+      </footer>
     </div>
   )
 }

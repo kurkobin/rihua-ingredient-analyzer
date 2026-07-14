@@ -1223,3 +1223,516 @@ body {
     padding: 10px 12px;
   }
 }
+
+/* ===== 智能预警区 ===== */
+.alert-section {
+  margin-bottom: 16px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border-left: 4px solid;
+}
+.alert-section h3 {
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+.alert-desc {
+  font-size: 13px;
+  color: #636e72;
+  margin-bottom: 12px;
+}
+
+/* 成分相互作用预警 */
+.alert-interactions {
+  background: #fff5f5;
+  border-left-color: #d63031;
+}
+.alert-interactions h3 {
+  color: #d63031;
+}
+.alert-item {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+.alert-item:last-child {
+  margin-bottom: 0;
+}
+.alert-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.alert-pair {
+  font-weight: 600;
+  color: #2d3436;
+}
+.alert-plus {
+  color: #b2bec3;
+  font-weight: 400;
+}
+.alert-badge {
+  margin-left: auto;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.alert-badge-high {
+  background: #d63031;
+  color: #fff;
+}
+.alert-badge-mid {
+  background: #fdcb6e;
+  color: #2d3436;
+}
+.alert-severity-high {
+  border-left: 3px solid #d63031;
+}
+.alert-severity-mid {
+  border-left: 3px solid #fdcb6e;
+}
+.alert-reason {
+  font-size: 13px;
+  color: #636e72;
+  line-height: 1.5;
+}
+
+/* 过敏原预警 */
+.alert-allergens {
+  background: #fff0f0;
+  border-left-color: #e84393;
+}
+.alert-allergens h3 {
+  color: #e84393;
+}
+.alert-allergen-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.allergen-name {
+  font-weight: 600;
+  color: #d63031;
+}
+.link-btn-sm {
+  background: none;
+  border: 1px solid #d63031;
+  color: #d63031;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.link-btn-sm:hover {
+  background: #d63031;
+  color: #fff;
+}
+
+/* 替代建议 */
+.alert-alternatives {
+  background: #f0f7ff;
+  border-left-color: #0984e3;
+}
+.alert-alternatives h3 {
+  color: #0984e3;
+}
+.alert-alt-item {
+  border-left: 3px solid #0984e3;
+}
+.alt-original {
+  font-weight: 600;
+  color: #2d3436;
+  margin-bottom: 4px;
+}
+.alt-reason {
+  font-size: 13px;
+  color: #636e72;
+  margin-bottom: 8px;
+}
+.alt-suggestions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.alt-label {
+  font-size: 13px;
+  color: #636e72;
+}
+.alt-chip {
+  background: #e8f4fd;
+  color: #0984e3;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* ===== 过敏原设置页 ===== */
+.allergen-add-section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.allergen-input-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.allergen-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid #dfe6e9;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+.allergen-input:focus {
+  outline: none;
+  border-color: #0984e3;
+}
+.allergen-quick-label {
+  font-size: 13px;
+  color: #636e72;
+  margin-bottom: 8px;
+}
+.allergen-quick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.allergen-quick-chip {
+  background: #f5f6fa;
+  border: 1px solid #dfe6e9;
+  color: #2d3436;
+  padding: 5px 12px;
+  border-radius: 16px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.allergen-quick-chip:hover {
+  background: #e8f4fd;
+  border-color: #0984e3;
+  color: #0984e3;
+}
+.allergen-quick-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.allergen-list-section {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.allergen-list-section h3 {
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+.allergen-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f2f6;
+}
+.allergen-list-item:last-child {
+  border-bottom: none;
+}
+.allergen-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.allergen-item-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #2d3436;
+}
+.allergen-item-time {
+  font-size: 12px;
+  color: #b2bec3;
+}
+.allergen-delete-btn {
+  background: none;
+  border: none;
+  color: #b2bec3;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+.allergen-delete-btn:hover {
+  background: #fff0f0;
+  color: #d63031;
+}
+.allergen-empty {
+  text-align: center;
+  color: #b2bec3;
+  font-size: 14px;
+  padding: 24px 0;
+  line-height: 2;
+}
+.allergen-empty-hint {
+  font-size: 12px;
+  color: #dfe6e9;
+}
+.allergen-tips {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+.allergen-tips h4 {
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: #636e72;
+}
+.allergen-tips ul {
+  list-style: disc;
+  padding-left: 20px;
+}
+.allergen-tips li {
+  font-size: 13px;
+  color: #636e72;
+  line-height: 1.8;
+}
+
+/* 预警区 + 过敏原页移动端适配 */
+@media (max-width: 600px) {
+  .alert-section {
+    padding: 12px 14px;
+  }
+  .alert-section h3 {
+    font-size: 14px;
+  }
+  .alert-desc {
+    font-size: 12px;
+  }
+  .alert-reason {
+    font-size: 12px;
+  }
+  .alert-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+  }
+  .allergen-input-row {
+    flex-direction: column;
+  }
+  .allergen-add-section,
+  .allergen-list-section {
+    padding: 14px;
+  }
+}
+
+/* ===== 产品理念横幅 ===== */
+.hero-banner {
+  background: linear-gradient(135deg, #0984e3 0%, #6c5ce7 100%);
+  border-radius: 16px;
+  padding: 28px 32px;
+  margin-bottom: 16px;
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(9, 132, 227, 0.2);
+}
+.hero-slogan {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+.hero-desc {
+  font-size: 14px;
+  opacity: 0.92;
+  line-height: 1.6;
+}
+
+/* ===== 数据统计卡片 ===== */
+.stats-cards {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  flex: 1;
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px 12px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: transform 0.2s;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.stat-number {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0984e3;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.stat-label {
+  font-size: 13px;
+  color: #636e72;
+}
+
+/* ===== 评分等级说明 ===== */
+.score-grade {
+  margin: 10px 0 6px;
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.6);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.grade-label {
+  font-size: 18px;
+  font-weight: 700;
+}
+.grade-desc {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+/* ===== 成分风险分布饼图卡片 ===== */
+.risk-chart-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.risk-chart-card h3 {
+  font-size: 16px;
+  margin-bottom: 12px;
+  color: #2d3436;
+}
+.risk-chart-wrapper {
+  width: 100%;
+}
+.risk-chart-legend {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f2f6;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #636e72;
+}
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* ===== 页脚 ===== */
+.footer {
+  margin-top: 40px;
+  padding: 24px 20px;
+  background: #2d3436;
+  color: #b2bec3;
+  border-radius: 12px 12px 0 0;
+}
+.footer-section {
+  margin-bottom: 16px;
+}
+.footer-section h4 {
+  font-size: 14px;
+  color: #dfe6e9;
+  margin-bottom: 6px;
+}
+.footer-section p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #b2bec3;
+}
+.footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid #636e72;
+  font-size: 13px;
+  color: #dfe6e9;
+}
+.footer-link {
+  color: #74b9ff;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-link:hover {
+  color: #a29bfe;
+  text-decoration: underline;
+}
+
+/* 首页新增元素移动端适配 */
+@media (max-width: 600px) {
+  .hero-banner {
+    padding: 20px 16px;
+  }
+  .hero-slogan {
+    font-size: 20px;
+  }
+  .hero-desc {
+    font-size: 13px;
+  }
+  .stats-cards {
+    flex-direction: row;
+    gap: 10px;
+  }
+  .stat-card {
+    padding: 14px 6px;
+  }
+  .stat-number {
+    font-size: 24px;
+  }
+  .stat-label {
+    font-size: 11px;
+  }
+  .score-grade {
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px 12px;
+  }
+  .grade-label {
+    font-size: 16px;
+  }
+  .grade-desc {
+    font-size: 12px;
+  }
+  .risk-chart-card {
+    padding: 14px;
+  }
+  .footer {
+    padding: 18px 14px;
+  }
+  .footer-section p {
+    font-size: 11px;
+  }
+  .footer-bottom {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+}

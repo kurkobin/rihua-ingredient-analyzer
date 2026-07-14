@@ -11,17 +11,20 @@ from app.database import (
     add_history, get_history_list, get_history_detail,
     delete_history, clear_history,
     search_ingredients, get_ingredient_categories,
+    add_allergen, get_allergens, delete_allergen, get_allergen_names,
 )
 from app.limiter import limiter
 from app.models.schemas import (
     AnalysisResponse, HistoryItem, HistoryDetail,
     CompareItem, CompareResponse,
     IngredientSearchItem, IngredientSearchResponse,
+    AllergenItem, AllergenListResponse,
 )
 from app.services.ocr import BaiduOCRService
 from app.services.llm import DeepSeekService
 from app.services.ingredient import IngredientService
 from app.services.pdf_service import generate_report_pdf
+from app.services.interaction import check_interactions, suggest_alternatives
 
 router = APIRouter()
 
@@ -92,6 +95,22 @@ async def analyze_ingredient(request: Request, image: UploadFile = File(...)):
         summary=analysis.summary,
         product_type=analysis.product_type,
     )
+
+    # 8. 三大智能预警:成分冲突 + 过敏原 + 替代建议
+    ingredient_names = [ing.name for ing in ingredients]
+    # 8a. 成分相互作用检测
+    response.interactions = check_interactions(ingredient_names)
+    # 8b. 过敏原预警(检查用户档案中标记的过敏成分)
+    allergen_names = get_allergen_names()
+    if allergen_names:
+        from app.models.schemas import AllergenAlert
+        # 用集合交集快速找出命中的过敏成分
+        hit_allergens = set(ingredient_names) & set(allergen_names)
+        response.allergen_alerts = [AllergenAlert(ingredient_name=n) for n in sorted(hit_allergens)]
+    # 8c. 成分替代建议(仅对"慎用/规避"成分)
+    risk_levels = {ing.name: ing.risk_level for ing in ingredients if ing.risk_level}
+    response.alternatives = suggest_alternatives(ingredient_names, risk_levels)
+
     # 先写入历史记录,拿到 history_id
     history_id = add_history(
         img_hash=img_hash,
@@ -286,3 +305,39 @@ def search_ingredient_db(
         items=items,
         categories=categories,
     )
+
+
+# ===== 过敏原档案接口 =====
+
+@router.get("/allergens", response_model=AllergenListResponse)
+def list_allergens():
+    """获取用户过敏原档案列表"""
+    rows = get_allergens()
+    items = [AllergenItem(**r) for r in rows]
+    return AllergenListResponse(items=items, total=len(items))
+
+
+@router.post("/allergens", response_model=AllergenItem)
+def create_allergen(body: dict):
+    """添加过敏成分
+
+    请求体: {"ingredient_name": "香精"}
+    已存在则忽略,返回已有记录
+    """
+    name = body.get("ingredient_name", "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="ingredient_name 不能为空")
+    if len(name) > 100:
+        raise HTTPException(status_code=400, detail="成分名过长(最多100字符)")
+    record = add_allergen(name)
+    if not record:
+        raise HTTPException(status_code=500, detail="添加失败")
+    return AllergenItem(**record)
+
+
+@router.delete("/allergens/{allergen_id}")
+def remove_allergen(allergen_id: int):
+    """删除一条过敏成分"""
+    if not delete_allergen(allergen_id):
+        raise HTTPException(status_code=404, detail="过敏原记录不存在")
+    return {"message": "已删除", "id": allergen_id}

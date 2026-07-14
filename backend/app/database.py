@@ -62,6 +62,14 @@ def init_db() -> None:
                 created_at   TEXT NOT NULL        -- 分析时间(ISO 格式)
             );
             CREATE INDEX IF NOT EXISTS idx_history_created ON history(created_at DESC);
+
+            -- 用户过敏原档案表(标记过敏成分,扫描时自动预警)
+            CREATE TABLE IF NOT EXISTS allergens (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                ingredient_name TEXT UNIQUE NOT NULL,  -- 过敏成分名(唯一,防重复)
+                created_at      TEXT NOT NULL           -- 添加时间(ISO 格式)
+            );
+            CREATE INDEX IF NOT EXISTS idx_allergens_name ON allergens(ingredient_name);
             """
         )
         conn.commit()
@@ -320,6 +328,63 @@ def set_cache(img_hash: str, result_json: str) -> None:
             (img_hash, result_json, datetime.now().isoformat()),
         )
         conn.commit()
+    finally:
+        conn.close()
+
+
+# ===== 过敏原档案 CRUD =====
+
+def add_allergen(ingredient_name: str) -> dict | None:
+    """添加过敏成分(已存在则忽略,返回该记录)"""
+    from datetime import datetime
+    conn = get_connection()
+    try:
+        conn.execute(
+            "INSERT OR IGNORE INTO allergens (ingredient_name, created_at) VALUES (?, ?)",
+            (ingredient_name, datetime.now().isoformat()),
+        )
+        conn.commit()
+        row = conn.execute(
+            "SELECT * FROM allergens WHERE ingredient_name = ?", (ingredient_name,)
+        ).fetchone()
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def get_allergens() -> list[dict]:
+    """获取全部过敏成分列表(按时间倒序)"""
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            "SELECT * FROM allergens ORDER BY created_at DESC"
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def delete_allergen(allergen_id: int) -> bool:
+    """删除一条过敏成分,返回是否删除成功"""
+    conn = get_connection()
+    try:
+        cursor = conn.execute(
+            "DELETE FROM allergens WHERE id = ?", (allergen_id,)
+        )
+        conn.commit()
+        return cursor.rowcount > 0
+    finally:
+        conn.close()
+
+
+def get_allergen_names() -> list[str]:
+    """获取全部过敏成分名列表(用于 /analyze 时快速匹配)"""
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            "SELECT ingredient_name FROM allergens"
+        ).fetchall()
+        return [r["ingredient_name"] for r in rows]
     finally:
         conn.close()
 
