@@ -182,6 +182,55 @@ body {
 }
 
 /* ===== 贡献成分页 ===== */
+/* 主页贡献成分入口卡片 */
+.contribute-entry {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(135deg, #f0fff4 0%, #e8f8ef 100%);
+  border: 1px solid #00b894;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-top: 16px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.contribute-entry:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 184, 148, 0.15);
+}
+
+.contribute-entry-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.contribute-entry-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.contribute-entry-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #00b894;
+  margin-bottom: 2px;
+}
+
+.contribute-entry-desc {
+  font-size: 13px;
+  color: #636e72;
+  line-height: 1.4;
+}
+
+.contribute-entry-arrow {
+  font-size: 22px;
+  color: #00b894;
+  flex-shrink: 0;
+  font-weight: 300;
+}
+
 .upload-area.dragging {
   border-color: #00b894;
   background: #f0fff4;

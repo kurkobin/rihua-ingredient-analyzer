@@ -250,6 +250,21 @@ function App() {
               <div className="stat-label">类产品覆盖</div>
             </div>
           </div>
+
+          {/* 贡献成分入口(突出展示) */}
+          <div
+            className="contribute-entry"
+            onClick={() => setPage('contribute')}
+          >
+            <div className="contribute-entry-icon">🌱</div>
+            <div className="contribute-entry-body">
+              <div className="contribute-entry-title">贡献成分</div>
+              <div className="contribute-entry-desc">
+                找不到产品?上传配料表图片帮我们扩充数据库
+              </div>
+            </div>
+            <div className="contribute-entry-arrow">›</div>
+          </div>
         </>
       )}
 
