@@ -43,14 +43,17 @@ app.add_exception_handler(
 )
 
 # CORS:生产环境收紧为前端域名白名单
-# 本地开发(localhost:5173)+ Vercel 生产域名
+# 从环境变量读取,方便将来切换部署平台(如 Cloudflare Pages → 腾讯云)
+# 环境变量 CORS_ORIGINS 用逗号分隔多个域名
+import os
+
+_default_origins = "http://localhost:5173,http://127.0.0.1:5173,https://rihua-ingredient-analyzer.vercel.app"
+_cors_env = os.getenv("CORS_ORIGINS", _default_origins)
+allow_origins = [o.strip() for o in _cors_env.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "https://rihua-ingredient-analyzer.vercel.app",
-    ],
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
