@@ -13,6 +13,7 @@ import IngredientDetailModal from './components/IngredientDetailModal'
 import History from './History'
 import IngredientSearch from './IngredientSearch'
 import AllergenSettings from './AllergenSettings'
+import Contribute from './Contribute'
 import { saveHistory, checkAllergenAlerts } from './storage'
 
 // ===== 图片压缩 =====
@@ -66,7 +67,7 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<AnalysisResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [page, setPage] = useState<'home' | 'history' | 'search' | 'allergen'>('home')
+  const [page, setPage] = useState<'home' | 'history' | 'search' | 'allergen' | 'contribute'>('home')
   const [selectedIngredient, setSelectedIngredient] = useState<IngredientInfo | null>(null)
 
   // 选择图片
@@ -113,6 +114,12 @@ function App() {
         throw new Error(err.detail || `请求失败(${resp.status})`)
       }
       const data: AnalysisResponse = await resp.json()
+
+      // 非日化品:不保存历史,不检查过敏原,直接展示拒绝提示
+      if (data.product_type === '非日化品') {
+        setResult(data)
+        return
+      }
 
       // 前端做过敏原检查(基于本地 localStorage)
       const allergenAlerts = checkAllergenAlerts(data.ingredients)
@@ -190,6 +197,11 @@ function App() {
     return <AllergenSettings onBack={() => setPage('home')} />
   }
 
+  // 贡献成分页
+  if (page === 'contribute') {
+    return <Contribute onBack={() => setPage('home')} />
+  }
+
   return (
     <div className="app">
       <header className="header">
@@ -207,6 +219,9 @@ function App() {
         </button>
         <button className="link-btn" onClick={() => setPage('allergen')}>
           ⚠️ 过敏原
+        </button>
+        <button className="link-btn" onClick={() => setPage('contribute')}>
+          🌱 贡献成分
         </button>
       </div>
 
@@ -269,6 +284,28 @@ function App() {
       {/* 分析结果 */}
       {result && !loading && (
         <div className="result">
+          {/* 非日化品拒绝提示 */}
+          {result.product_type === '非日化品' ? (
+            <div className="non-daily-notice">
+              <div className="non-daily-icon">🚫</div>
+              <h3>暂不支持此类产品</h3>
+              <p className="non-daily-msg">{result.summary}</p>
+              <p className="non-daily-tip">
+                本工具专注日化洗护产品(洗发水、沐浴露、牙膏、化妆品等)的成分分析,
+                请上传洗护用品的配料表图片。
+              </p>
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setResult(null)
+                  setImage(null)
+                }}
+              >
+                重新上传
+              </button>
+            </div>
+          ) : (
+            <>
           <ScoreCard result={result} />
           <RiskChart result={result} />
 
@@ -316,6 +353,8 @@ function App() {
           >
             📄 导出 PDF 报告
           </button>
+            </>
+          )}
         </div>
       )}
 

@@ -81,6 +81,21 @@ def init_db() -> None:
                 created_at      TEXT NOT NULL           -- 添加时间(ISO 格式)
             );
             CREATE INDEX IF NOT EXISTS idx_allergens_name ON allergens(ingredient_name);
+
+            -- 用户贡献的待审核成分表(用户上传图片,后端 OCR+LLM 自动提取成分信息)
+            CREATE TABLE IF NOT EXISTS pending_ingredients (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                name         TEXT NOT NULL,             -- 成分名(LLM 提取)
+                category     TEXT,                      -- 分类(表面活性剂/防腐剂/...)
+                risk_level   TEXT,                      -- 风险等级(安全/注意/慎用/规避)
+                description  TEXT,                      -- 成分描述
+                reference    TEXT,                      -- 法规/文献出处
+                ocr_text     TEXT,                      -- 原始 OCR 文字(便于追溯)
+                status       TEXT DEFAULT 'pending',    -- 状态:pending/approved/rejected
+                created_at   TEXT NOT NULL              -- 贡献时间(ISO 格式)
+            );
+            CREATE INDEX IF NOT EXISTS idx_pending_status ON pending_ingredients(status);
+            CREATE INDEX IF NOT EXISTS idx_pending_name ON pending_ingredients(name);
             """
         )
         conn.commit()
@@ -458,6 +473,51 @@ def get_allergen_names() -> list[str]:
             "SELECT ingredient_name FROM allergens"
         ).fetchall()
         return [r["ingredient_name"] for r in rows]
+    finally:
+        conn.close()
+
+
+# ===== 用户贡献成分 CRUD =====
+
+def add_pending_ingredients(items: list[dict]) -> int:
+    """批量添加用户贡献的待审核成分
+
+    Args:
+        items: [{"name", "category", "risk_level", "description", "reference", "ocr_text"}, ...]
+
+    Returns:
+        成功插入的条数
+    """
+    if not items:
+        return 0
+    from datetime import datetime
+    now = datetime.now().isoformat()
+    conn = get_connection()
+    try:
+        rows = [
+            (
+                it.get("name", ""),
+                it.get("category"),
+                it.get("risk_level"),
+                it.get("description"),
+                it.get("reference"),
+                it.get("ocr_text", ""),
+                "pending",
+                now,
+            )
+            for it in items
+            if it.get("name")  # 跳过无名条目
+        ]
+        conn.executemany(
+            """
+            INSERT INTO pending_ingredients
+                (name, category, risk_level, description, reference, ocr_text, status, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            rows,
+        )
+        conn.commit()
+        return len(rows)
     finally:
         conn.close()
 

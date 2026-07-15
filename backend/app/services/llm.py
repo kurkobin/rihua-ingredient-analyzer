@@ -57,7 +57,23 @@ class DeepSeekService:
             ingredient_lines.append(line)
         ingredient_list = "\n".join(ingredient_lines) if ingredient_lines else "无"
 
-        prompt = f"""你是一位专业的日化洗护产品成分分析师。请根据以下配料表信息,分析产品的优缺点。
+        prompt = f"""你是一位专业的日化洗护产品成分分析师。
+
+【第一步:判断是否为日化洗护产品】
+请先判断这张配料表图片是否属于日化洗护产品。
+日化洗护产品包括:洗发水、护发素、沐浴露、洗手液、牙膏、漱口水、面霜、乳液、精华、防晒霜、卸妆产品、洁面产品、彩妆、洗衣液、洗衣粉、柔顺剂、洗洁精、香皂、剃须产品等。
+非日化品包括:食品、零食、饮料、药品、保健品、医疗器械、宠物用品、汽车用品、建材等。
+
+如果不是日化洗护产品,请直接返回(不要输出其他内容):
+{{
+  "product_type": "非日化品",
+  "pros": [],
+  "cons": [],
+  "score": 0,
+  "summary": "抱歉,本工具仅支持分析日化洗护产品配料表,请上传洗护用品、化妆品等图片"
+}}
+
+如果是日化洗护产品,请继续按以下要求分析。
 
 【配料表原文】
 {raw_text}
@@ -185,3 +201,106 @@ class DeepSeekService:
         elapsed = time.time() - start_time
         logger.error(f"LLM 分析彻底失败,重试 {MAX_RETRIES} 次后仍报错,总耗时 {elapsed:.2f}s")
         raise RuntimeError(f"LLM 分析失败(重试 {MAX_RETRIES} 次): {last_error}")
+
+    async def extract_ingredients_for_contribution(self, ocr_text: str) -> list[dict]:
+        """从 OCR 文字提取成分信息(用于用户贡献功能)
+
+        用户只需上传图片,后端 OCR 识别文字后,用此方法自动提取
+        成分名/分类/风险等级/描述,无需用户手动填写任何信息。
+
+        Args:
+            ocr_text: OCR 识别的配料表文字
+
+        Returns:
+            list[dict]: [{"name", "category", "risk_level", "description"}, ...]
+        """
+        if not self.api_key:
+            raise RuntimeError("DeepSeek API Key 未配置")
+
+        start_time = time.time()
+        logger.info(f"开始 LLM 成分提取(贡献功能),文字长度: {len(ocr_text)}")
+
+        prompt = f"""你是一位日化洗护产品成分专家。请从以下配料表文字中提取所有成分,并为每个成分判断分类、风险等级和描述。
+
+【配料表文字】
+{ocr_text}
+
+提取要求:
+1. 逐个提取配料表中出现的成分名(不要遗漏,不要合并)
+2. 为每个成分判断:
+   - name: 成分标准名(中文优先)
+   - category: 分类(表面活性剂/防腐剂/保湿剂/香精/色素/防晒剂/活性成分/柔顺剂/其他)
+   - risk_level: 风险等级(安全/注意/慎用/规避,不确定时填"注意")
+   - description: 一句话描述该成分的作用(20字以内)
+
+请严格按以下 JSON 格式输出,不要输出任何其他内容(不要 markdown 代码块标记):
+{{
+  "ingredients": [
+    {{"name": "成分名", "category": "分类", "risk_level": "安全", "description": "描述"}}
+  ]
+}}"""
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.3,
+        }
+
+        last_error: Exception | None = None
+        for attempt in range(MAX_RETRIES):
+            try:
+                async with httpx.AsyncClient(timeout=60, trust_env=False) as client:
+                    resp = await client.post(
+                        f"{self.base_url}/chat/completions",
+                        headers=headers,
+                        json=payload,
+                    )
+                    resp.raise_for_status()
+                    data = resp.json()
+
+                try:
+                    content = data["choices"][0]["message"]["content"].strip()
+                except (KeyError, IndexError, TypeError):
+                    logger.error(f"LLM 响应结构异常: {json.dumps(data, ensure_ascii=False)[:500]}")
+                    return []
+
+                json_match = re.search(r'\{[\s\S]*\}', content)
+                if not json_match:
+                    logger.warning(f"LLM 输出无法解析为 JSON: {content[:300]}")
+                    return []
+
+                try:
+                    result = json.loads(json_match.group(0))
+                except json.JSONDecodeError:
+                    logger.warning(f"LLM JSON 解析失败: {json_match.group(0)[:300]}")
+                    return []
+
+                ingredients = result.get("ingredients", [])
+                elapsed = time.time() - start_time
+                logger.info(f"LLM 成分提取成功,提取 {len(ingredients)} 个成分,耗时 {elapsed:.2f}s")
+                return ingredients
+
+            except httpx.HTTPStatusError as e:
+                last_error = e
+                status_code = e.response.status_code
+                if 400 <= status_code < 500 and status_code != 429:
+                    logger.error(f"LLM 请求失败(HTTP {status_code}),不重试: {e}")
+                    raise RuntimeError(f"DeepSeek API 请求失败(HTTP {status_code})")
+                logger.warning(f"LLM 第 {attempt + 1} 次尝试失败(HTTP {status_code}): {e}")
+
+            except httpx.HTTPError as e:
+                last_error = e
+                logger.warning(f"LLM 第 {attempt + 1} 次网络错误: {type(e).__name__}: {e}")
+
+            if attempt < MAX_RETRIES - 1:
+                delay = RETRY_BASE_DELAY * (2 ** attempt)
+                logger.info(f"等待 {delay}s 后重试...")
+                await asyncio.sleep(delay)
+
+        elapsed = time.time() - start_time
+        logger.error(f"LLM 成分提取彻底失败,总耗时 {elapsed:.2f}s")
+        raise RuntimeError(f"LLM 成分提取失败(重试 {MAX_RETRIES} 次): {last_error}")

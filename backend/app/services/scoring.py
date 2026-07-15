@@ -5,13 +5,14 @@
 
 评分规则:
 - 基础分 100
-- 风险扣分(按比例)= (注意数×1.5 + 慎用数×4 + 规避数×9) / 总数 × 10
+- 风险扣分(按比例)= (注意数×1.5 + 慎用数×4 + 规避数×9 + 未知数×2) / 总数 × 10
 - 评分 = 100 - 风险扣分,范围 0-100
 
 设计思路:
 - 按比例计算,避免成分越多分越低(30个全慎用和10个全慎用分数相同)
 - 规避成分扣分最重(9),慎用次之(4),注意最轻(1.5)
-- 大部分产品能落在 50-95 分区间,符合直觉
+- 未入库成分按"未知风险"处理,权重 2(高于安全0,低于注意1.5)
+  避免未入库成分被当作安全成分导致评分虚高
 
 等级划分:
 - 86-100:优秀(成分安全温和,推荐使用)
@@ -28,6 +29,7 @@ RISK_WEIGHTS = {
     "注意": 1.5,
     "慎用": 4,
     "规避": 9,
+    "未知": 2,  # 未入库成分,风险未知,给中性扣分
 }
 
 
@@ -53,11 +55,12 @@ def calculate_score(ingredients: list[IngredientInfo]) -> int:
         counts[level] += 1
 
     # 计算风险扣分(按比例)
-    # 注意:未入库成分(无风险等级)按"安全"处理,不扣分
+    # 未入库成分(未知风险)按权重 2 扣分,避免评分虚高
     risk_penalty = (
         counts["注意"] * RISK_WEIGHTS["注意"]
         + counts["慎用"] * RISK_WEIGHTS["慎用"]
         + counts["规避"] * RISK_WEIGHTS["规避"]
+        + counts["未知"] * RISK_WEIGHTS["未知"]
     ) / total * 10
 
     score = 100 - risk_penalty
@@ -68,8 +71,8 @@ def calculate_score(ingredients: list[IngredientInfo]) -> int:
     final_score = round(score)
     logger.info(
         f"评分计算:总成分 {total},安全 {counts['安全']},注意 {counts['注意']},"
-        f"慎用 {counts['慎用']},规避 {counts['规避']},扣分 {risk_penalty:.1f},"
-        f"最终评分 {final_score}"
+        f"慎用 {counts['慎用']},规避 {counts['规避']},未知 {counts['未知']},"
+        f"扣分 {risk_penalty:.1f},最终评分 {final_score}"
     )
     return final_score
 

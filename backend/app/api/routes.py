@@ -12,8 +12,10 @@ from app.database import (
     delete_history, clear_history,
     search_ingredients, get_ingredient_categories,
     add_allergen, get_allergens, delete_allergen, get_allergen_names,
+    add_pending_ingredients,
 )
 from app.limiter import limiter
+from app.logger import logger
 from app.models.schemas import (
     AnalysisResponse, HistoryItem, HistoryDetail,
     CompareItem, CompareResponse,
@@ -86,11 +88,28 @@ async def analyze_ingredient(request: Request, image: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"LLM 分析失败: {e}")
 
-    # 6.5 客观评分:基于成分库风险等级计算(覆盖 LLM 主观评分)
+    # 6.5 非日化品拦截:LLM 判定为非日化品时,直接返回精简响应
+    # 不计算评分、不做智能预警、不展示成分,前端据此显示拒绝提示
+    is_non_daily = analysis.product_type == "非日化品"
+    if is_non_daily:
+        logger.info("识别为非日化品,跳过评分和智能预警")
+        response = AnalysisResponse(
+            ocr_text=ocr_result.text,
+            ingredients=[],  # 非日化品不展示成分
+            pros=[],
+            cons=[],
+            score=0,
+            summary=analysis.summary,
+            product_type="非日化品",
+        )
+        # 非日化品不写缓存(避免下次相同图片跳过 LLM 判断),也不写历史
+        return response
+
+    # 7. 客观评分:基于成分库风险等级计算(覆盖 LLM 主观评分)
     # LLM 只负责生成优缺点文案和总结,评分由后端规则计算,更稳定可复现
     objective_score = calculate_score(ingredients)
 
-    # 7. 组装结果,先写历史(拿到 history_id)再写缓存
+    # 8. 组装结果,先写历史(拿到 history_id)再写缓存
     response = AnalysisResponse(
         ocr_text=ocr_result.text,
         ingredients=ingredients,
@@ -101,18 +120,18 @@ async def analyze_ingredient(request: Request, image: UploadFile = File(...)):
         product_type=analysis.product_type,
     )
 
-    # 8. 三大智能预警:成分冲突 + 过敏原 + 替代建议
+    # 9. 三大智能预警:成分冲突 + 过敏原 + 替代建议
     ingredient_names = [ing.name for ing in ingredients]
-    # 8a. 成分相互作用检测
+    # 9a. 成分相互作用检测
     response.interactions = check_interactions(ingredient_names)
-    # 8b. 过敏原预警(检查用户档案中标记的过敏成分)
+    # 9b. 过敏原预警(检查用户档案中标记的过敏成分)
     allergen_names = get_allergen_names()
     if allergen_names:
         from app.models.schemas import AllergenAlert
         # 用集合交集快速找出命中的过敏成分
         hit_allergens = set(ingredient_names) & set(allergen_names)
         response.allergen_alerts = [AllergenAlert(ingredient_name=n) for n in sorted(hit_allergens)]
-    # 8c. 成分替代建议(仅对"慎用/规避"成分)
+    # 9c. 成分替代建议(仅对"慎用/规避"成分)
     risk_levels = {ing.name: ing.risk_level for ing in ingredients if ing.risk_level}
     response.alternatives = suggest_alternatives(ingredient_names, risk_levels)
 
@@ -392,3 +411,64 @@ def remove_allergen(request: Request, allergen_id: int):
     if not delete_allergen(allergen_id):
         raise HTTPException(status_code=404, detail="过敏原记录不存在")
     return {"message": "已删除", "id": allergen_id}
+
+
+# ===== 用户贡献成分接口 =====
+
+@router.post("/contribute")
+@limiter.limit("3/minute")
+async def contribute_ingredients(request: Request, image: UploadFile = File(...)):
+    """用户贡献成分(极简版:只需上传图片)
+
+    流程:图片 -> OCR 识别文字 -> LLM 自动提取成分名/分类/风险等级/描述
+         -> 存入待审核表 -> 返回感谢信息
+
+    用户无需填写任何信息,所有识别由后端自动完成。
+    提取的成分进入待审核状态,管理员审核通过后入库。
+
+    限流:每分钟 3 次/IP(OCR+LLM 成本高,防滥用)
+    """
+    # 1. 校验文件类型
+    if not image.content_type or not image.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="请上传图片文件")
+
+    # 2. 读取图片(限制 10MB)
+    image_bytes = await image.read()
+    if not image_bytes:
+        raise HTTPException(status_code=400, detail="图片内容为空")
+    MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10MB
+    if len(image_bytes) > MAX_IMAGE_SIZE:
+        raise HTTPException(status_code=413, detail="图片过大,请压缩到 10MB 以内后重试")
+
+    # 3. OCR 识别
+    try:
+        ocr_result = await ocr_service.recognize(image_bytes)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"OCR 识别失败: {type(e).__name__}: {e}")
+
+    if not ocr_result.text.strip():
+        raise HTTPException(status_code=422, detail="未识别到文字,请重新拍照或调整图片")
+
+    # 4. LLM 自动提取成分信息(用户无需手动填写)
+    try:
+        ingredients = await llm_service.extract_ingredients_for_contribution(ocr_result.text)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"成分提取失败: {e}")
+
+    if not ingredients:
+        raise HTTPException(status_code=422, detail="未能从图片中提取到成分信息,请确保图片清晰展示配料表")
+
+    # 5. 为每条记录附上原始 OCR 文字(便于后续审核追溯)
+    for ing in ingredients:
+        ing["ocr_text"] = ocr_result.text[:2000]  # 截断,避免过长
+
+    # 6. 存入待审核表
+    count = add_pending_ingredients(ingredients)
+    logger.info(f"用户贡献成分:提取 {len(ingredients)} 个,入库 {count} 个")
+
+    # 7. 返回感谢信息(不暴露具体成分,保护数据质量)
+    return {
+        "message": "感谢您的贡献!您的图片已成功识别并提交。",
+        "count": count,
+        "thanks": True,
+    }
