@@ -25,6 +25,7 @@ from app.services.llm import DeepSeekService
 from app.services.ingredient import IngredientService
 from app.services.pdf_service import generate_report_pdf
 from app.services.interaction import check_interactions, suggest_alternatives
+from app.services.scoring import calculate_score
 
 router = APIRouter()
 
@@ -85,13 +86,17 @@ async def analyze_ingredient(request: Request, image: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"LLM 分析失败: {e}")
 
+    # 6.5 客观评分:基于成分库风险等级计算(覆盖 LLM 主观评分)
+    # LLM 只负责生成优缺点文案和总结,评分由后端规则计算,更稳定可复现
+    objective_score = calculate_score(ingredients)
+
     # 7. 组装结果,先写历史(拿到 history_id)再写缓存
     response = AnalysisResponse(
         ocr_text=ocr_result.text,
         ingredients=ingredients,
         pros=analysis.pros,
         cons=analysis.cons,
-        score=analysis.score,
+        score=objective_score,
         summary=analysis.summary,
         product_type=analysis.product_type,
     )
