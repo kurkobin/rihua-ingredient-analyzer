@@ -1,7 +1,9 @@
 // 共享常量和工具函数(供 App.tsx 及各子组件使用)
 
-// API 基础地址:本地开发走 Vite 代理(相对路径 /api),生产环境用环境变量
-export const API_BASE = import.meta.env.VITE_API_BASE || ''
+// API 基础地址
+// 本地开发走 Vite 代理(相对路径 /api),生产环境直接指向 Railway 后端
+// (为兼容 Cloudflare Pages 部署,直接写死地址,不依赖构建时环境变量)
+export const API_BASE = import.meta.env.VITE_API_BASE || 'https://ingredient-analyzer-api-production-6d10.up.railway.app'
 
 // 风险等级 -> 标签样式映射
 export const RISK_TAG: Record<string, { cls: string; label: string }> = {
