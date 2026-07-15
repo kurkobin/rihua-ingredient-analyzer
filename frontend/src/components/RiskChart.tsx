@@ -74,7 +74,7 @@ export default function RiskChart({ result }: RiskChartProps) {
               cy="50%"
               outerRadius={80}
               label={(entry) => `${entry.name} ${entry.value}`}
-              onClick={(entry) => handleClick(entry.name)}
+              onClick={(entry) => entry.name && handleClick(entry.name)}
             >
               {riskDistribution.map((entry, idx) => (
                 <Cell
