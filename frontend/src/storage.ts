@@ -7,6 +7,8 @@
  * 注意:localStorage 容量约 5-10MB,历史记录过多时需清理。
  */
 
+import type { AnalysisResponse, IngredientInfo, AllergenAlert } from './constants'
+
 // ===== 历史记录 =====
 
 export interface HistoryItem {
@@ -116,4 +118,31 @@ export function removeAllergen(id: number): void {
 /** 获取过敏原名称列表(用于扫描时检查) */
 export function getAllergenNames(): string[] {
   return getAllergens().map(a => a.ingredient_name)
+}
+
+// ===== 便利函数(供 App.tsx 直接调用) =====
+
+/** 保存分析结果到历史记录 */
+export function saveHistory(result: AnalysisResponse): void {
+  addHistory({
+    img_hash: '',  // 本地存储不依赖图片哈希
+    product_type: result.product_type || null,
+    summary: result.summary || null,
+    score: result.score,
+    ingredient_count: result.ingredients.length,
+    result_json: JSON.stringify(result),
+  })
+}
+
+/** 检查成分列表中是否包含用户过敏原,返回预警列表 */
+export function checkAllergenAlerts(ingredients: IngredientInfo[]): AllergenAlert[] {
+  const allergenNames = getAllergenNames()
+  if (allergenNames.length === 0) return []
+  const alerts: AllergenAlert[] = []
+  for (const ing of ingredients) {
+    if (allergenNames.some(name => ing.name.includes(name) || name.includes(ing.name))) {
+      alerts.push({ ingredient_name: ing.name })
+    }
+  }
+  return alerts
 }

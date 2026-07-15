@@ -146,7 +146,8 @@ def get_history(history_id: int):
 
 
 @router.delete("/history/{history_id}")
-def remove_history(history_id: int):
+@limiter.limit("20/minute")
+def remove_history(request: Request, history_id: int):
     """删除一条历史记录"""
     if not delete_history(history_id):
         raise HTTPException(status_code=404, detail="历史记录不存在")
@@ -154,7 +155,8 @@ def remove_history(history_id: int):
 
 
 @router.delete("/history")
-def remove_all_history():
+@limiter.limit("10/minute")
+def remove_all_history(request: Request):
     """清空全部历史记录"""
     count = clear_history()
     return {"message": f"已清空 {count} 条历史记录"}
@@ -163,7 +165,8 @@ def remove_all_history():
 # ===== 成分对比接口 =====
 
 @router.get("/compare", response_model=CompareResponse)
-def compare_history(ids: str):
+@limiter.limit("20/minute")
+def compare_history(request: Request, ids: str):
     """对比多条历史记录的成分差异
 
     参数:ids=1,2,3(逗号分隔的历史记录 id,至少 2 个)
@@ -235,7 +238,8 @@ def compare_history(ids: str):
 # ===== PDF 报告导出接口 =====
 
 @router.get("/report/{history_id}")
-def export_report(history_id: int):
+@limiter.limit("10/minute")
+def export_report(request: Request, history_id: int):
     """导出指定历史记录的 PDF 报告(旧接口,基于后端历史记录)
 
     返回 PDF 文件下载(application/pdf)
@@ -268,7 +272,8 @@ def export_report(history_id: int):
 
 
 @router.post("/report/generate")
-def generate_report_from_data(payload: dict):
+@limiter.limit("10/minute")
+def generate_report_from_data(request: Request, payload: dict):
     """根据前端传入的完整分析数据生成 PDF 报告(新接口)
 
     前端历史记录改为 localStorage 后,不再有后端 history_id,
@@ -307,7 +312,9 @@ def generate_report_from_data(payload: dict):
 # ===== 成分库检索接口 =====
 
 @router.get("/ingredients/search", response_model=IngredientSearchResponse)
+@limiter.limit("30/minute")
 def search_ingredient_db(
+    request: Request,
     name: str | None = None,
     category: str | None = None,
     risk_level: str | None = None,
@@ -355,7 +362,8 @@ def list_allergens():
 
 
 @router.post("/allergens", response_model=AllergenItem)
-def create_allergen(body: dict):
+@limiter.limit("20/minute")
+def create_allergen(request: Request, body: dict):
     """添加过敏成分
 
     请求体: {"ingredient_name": "香精"}
@@ -373,7 +381,8 @@ def create_allergen(body: dict):
 
 
 @router.delete("/allergens/{allergen_id}")
-def remove_allergen(allergen_id: int):
+@limiter.limit("20/minute")
+def remove_allergen(request: Request, allergen_id: int):
     """删除一条过敏成分"""
     if not delete_allergen(allergen_id):
         raise HTTPException(status_code=404, detail="过敏原记录不存在")

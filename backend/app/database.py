@@ -6,14 +6,25 @@
 import sqlite3
 from pathlib import Path
 
+from app.logger import logger
+
 # 数据库文件路径: backend/ingredients.db
 DB_PATH = Path(__file__).parent.parent / "ingredients.db"
 
 
 def get_connection() -> sqlite3.Connection:
-    """获取数据库连接(每次调用创建新连接,用完即关)"""
+    """获取数据库连接(每次调用创建新连接,用完即关)
+
+    开启 WAL 模式提升并发读性能。
+    """
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row  # 返回字典风格的行
+    # 开启 WAL 模式(提升读并发,减少锁竞争)
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA synchronous=NORMAL")
+    except sqlite3.OperationalError:
+        pass  # 某些环境可能不支持,忽略
     return conn
 
 
@@ -299,6 +310,68 @@ def find_ingredient(name: str) -> dict | None:
             (lower,),
         ).fetchone()
         return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def find_ingredients_batch(names: list[str]) -> dict[str, dict]:
+    """批量查询多个成分(优化 N+1 问题)
+
+    一次连接内完成所有查询,替代循环调用 find_ingredient。
+    匹配顺序:标准名 -> 同义词精确 -> 同义词小写。
+
+    Args:
+        names: 待查询的候选成分名列表
+
+    Returns:
+        dict: { 原始名: 成分信息 } 仅包含命中的项
+    """
+    if not names:
+        return {}
+
+    result: dict[str, dict] = {}
+    conn = get_connection()
+    try:
+        # 用单个连接批量查询,避免重复开关连接
+        for name in names:
+            if name in result:
+                continue  # 已命中,跳过
+
+            # 1. 标准名精确匹配
+            row = conn.execute(
+                "SELECT * FROM ingredients WHERE name = ?", (name,)
+            ).fetchone()
+            if row:
+                result[name] = dict(row)
+                continue
+
+            # 2. 同义词精确匹配
+            row = conn.execute(
+                """
+                SELECT i.* FROM ingredients i
+                JOIN synonyms s ON s.standard_name = i.name
+                WHERE s.alias = ?
+                """,
+                (name,),
+            ).fetchone()
+            if row:
+                result[name] = dict(row)
+                continue
+
+            # 3. 同义词小写匹配
+            lower = name.lower()
+            row = conn.execute(
+                """
+                SELECT i.* FROM ingredients i
+                JOIN synonyms s ON s.standard_name = i.name
+                WHERE LOWER(s.alias) = ?
+                """,
+                (lower,),
+            ).fetchone()
+            if row:
+                result[name] = dict(row)
+
+        return result
     finally:
         conn.close()
 

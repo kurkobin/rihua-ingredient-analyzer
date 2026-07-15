@@ -2,13 +2,20 @@
 
 负责将配料表文字转化为用户易懂的"优缺点"分析。
 """
+import asyncio
 import json
 import re
+import time
 
 import httpx
 
 from app.config import settings
+from app.logger import logger
 from app.models.schemas import AnalysisResult, IngredientInfo
+
+# 重试配置
+MAX_RETRIES = 3
+RETRY_BASE_DELAY = 2.0  # LLM 重试间隔比 OCR 长(避免 rate limit)
 
 
 class DeepSeekService:
@@ -24,7 +31,7 @@ class DeepSeekService:
         raw_text: str,
         ingredients: list[IngredientInfo],
     ) -> AnalysisResult:
-        """分析成分并生成优缺点
+        """分析成分并生成优缺点(带重试机制)
 
         Args:
             raw_text: OCR 识别的配料表原文
@@ -37,6 +44,9 @@ class DeepSeekService:
             raise RuntimeError(
                 "DeepSeek API Key 未配置,请在 .env 中设置 DEEPSEEK_API_KEY"
             )
+
+        start_time = time.time()
+        logger.info(f"开始 LLM 分析,成分数量: {len(ingredients)},模型: {self.model}")
 
         # 构造成分清单(标注库中已知信息)
         ingredient_lines = []
@@ -81,51 +91,97 @@ class DeepSeekService:
             "temperature": 0.3,  # 低温度保证输出稳定
         }
 
-        async with httpx.AsyncClient(timeout=60, trust_env=False) as client:
-            resp = await client.post(
-                f"{self.base_url}/chat/completions",
-                headers=headers,
-                json=payload,
-            )
-            resp.raise_for_status()
-            data = resp.json()
+        last_error: Exception | None = None
+        for attempt in range(MAX_RETRIES):
+            try:
+                async with httpx.AsyncClient(timeout=60, trust_env=False) as client:
+                    resp = await client.post(
+                        f"{self.base_url}/chat/completions",
+                        headers=headers,
+                        json=payload,
+                    )
+                    resp.raise_for_status()
+                    data = resp.json()
 
-        # 响应结构解析保护(避免 KeyError/IndexError)
-        try:
-            content = data["choices"][0]["message"]["content"].strip()
-        except (KeyError, IndexError, TypeError):
-            return AnalysisResult(
-                pros=[], cons=[], score=0,
-                summary="LLM 响应结构异常,请重试",
-            )
+                # 记录 token 用量(如果返回)
+                usage = data.get("usage", {})
+                if usage:
+                    logger.info(
+                        f"LLM token 用量 - 提示: {usage.get('prompt_tokens', '?')}, "
+                        f"完成: {usage.get('completion_tokens', '?')}, "
+                        f"总计: {usage.get('total_tokens', '?')}"
+                    )
 
-        # 用正则提取 JSON 对象,兼容 markdown 代码块和前后多余文本
-        json_match = re.search(r'\{[\s\S]*\}', content)
-        if not json_match:
-            return AnalysisResult(
-                pros=[], cons=[], score=0,
-                summary="分析结果解析失败,请重试",
-            )
+                # 响应结构解析保护(避免 KeyError/IndexError)
+                try:
+                    content = data["choices"][0]["message"]["content"].strip()
+                except (KeyError, IndexError, TypeError):
+                    logger.error(f"LLM 响应结构异常: {json.dumps(data, ensure_ascii=False)[:500]}")
+                    return AnalysisResult(
+                        pros=[], cons=[], score=0,
+                        summary="LLM 响应结构异常,请重试",
+                    )
 
-        try:
-            result = json.loads(json_match.group(0))
-        except json.JSONDecodeError:
-            return AnalysisResult(
-                pros=[], cons=[], score=0,
-                summary="分析结果解析失败,请重试",
-            )
+                # 用正则提取 JSON 对象,兼容 markdown 代码块和前后多余文本
+                json_match = re.search(r'\{[\s\S]*\}', content)
+                if not json_match:
+                    logger.warning(f"LLM 输出无法解析为 JSON,原始内容: {content[:300]}")
+                    return AnalysisResult(
+                        pros=[], cons=[], score=0,
+                        summary="分析结果解析失败,请重试",
+                    )
 
-        # AnalysisResult 构造保护(避免 pydantic ValidationError)
-        try:
-            return AnalysisResult(
-                pros=result.get("pros", []),
-                cons=result.get("cons", []),
-                score=result.get("score", 0),
-                summary=result.get("summary", ""),
-                product_type=result.get("product_type", ""),
-            )
-        except Exception:
-            return AnalysisResult(
-                pros=[], cons=[], score=0,
-                summary="分析结果格式异常,请重试",
-            )
+                try:
+                    result = json.loads(json_match.group(0))
+                except json.JSONDecodeError:
+                    logger.warning(f"LLM JSON 解析失败,原始内容: {json_match.group(0)[:300]}")
+                    return AnalysisResult(
+                        pros=[], cons=[], score=0,
+                        summary="分析结果解析失败,请重试",
+                    )
+
+                # AnalysisResult 构造保护(避免 pydantic ValidationError)
+                try:
+                    analysis = AnalysisResult(
+                        pros=result.get("pros", []),
+                        cons=result.get("cons", []),
+                        score=result.get("score", 0),
+                        summary=result.get("summary", ""),
+                        product_type=result.get("product_type", ""),
+                    )
+                except Exception:
+                    logger.error(f"AnalysisResult 构造失败: {result}")
+                    return AnalysisResult(
+                        pros=[], cons=[], score=0,
+                        summary="分析结果格式异常,请重试",
+                    )
+
+                elapsed = time.time() - start_time
+                logger.info(
+                    f"LLM 分析成功,评分: {analysis.score}, 产品类型: {analysis.product_type}, "
+                    f"耗时 {elapsed:.2f}s"
+                )
+                return analysis
+
+            except httpx.HTTPStatusError as e:
+                last_error = e
+                status_code = e.response.status_code
+                # 4xx 错误(如 401 认证失败、400 请求格式错误)不重试
+                if 400 <= status_code < 500 and status_code != 429:
+                    logger.error(f"LLM 请求失败(HTTP {status_code}),不重试: {e}")
+                    raise RuntimeError(f"DeepSeek API 请求失败(HTTP {status_code})")
+                logger.warning(f"LLM 第 {attempt + 1} 次尝试失败(HTTP {status_code}): {e}")
+
+            except httpx.HTTPError as e:
+                last_error = e
+                logger.warning(f"LLM 第 {attempt + 1} 次网络错误: {type(e).__name__}: {e}")
+
+            # 指数退避等待(最后一次不等待)
+            if attempt < MAX_RETRIES - 1:
+                delay = RETRY_BASE_DELAY * (2 ** attempt)
+                logger.info(f"等待 {delay}s 后重试...")
+                await asyncio.sleep(delay)
+
+        elapsed = time.time() - start_time
+        logger.error(f"LLM 分析彻底失败,重试 {MAX_RETRIES} 次后仍报错,总耗时 {elapsed:.2f}s")
+        raise RuntimeError(f"LLM 分析失败(重试 {MAX_RETRIES} 次): {last_error}")

@@ -4,8 +4,10 @@
 成分数据存储在 SQLite 数据库(由 seed.py 导入),本模块只负责匹配逻辑。
 """
 import re
+import time
 
-from app.database import find_ingredient
+from app.database import find_ingredients_batch
+from app.logger import logger
 from app.models.schemas import IngredientInfo
 
 
@@ -1975,6 +1977,8 @@ class IngredientService:
         Returns:
             匹配到的成分列表(保留原始顺序,去重)
         """
+        start_time = time.time()
+
         # 1. 清除前缀("成分："、"配料表："等)
         cleaned = text
         for pattern in self.PREFIX_PATTERNS:
@@ -2007,10 +2011,8 @@ class IngredientService:
         raw_text = "\n".join(merged_lines)
         raw_items = re.split(r"[,，、;；\n]+", raw_text)
 
-        # 4. 过滤和匹配
-        results: list[IngredientInfo] = []
-        seen: set[str] = set()
-
+        # 4. 过滤无效项,收集候选成分名
+        candidates: list[str] = []
         for item in raw_items:
             item = item.strip()
 
@@ -2031,8 +2033,17 @@ class IngredientService:
             if re.search(r"[。！？]$", item):
                 continue
 
-            # 同义词归一 + 数据库查询(find_ingredient 一次搞定)
-            info = find_ingredient(item)
+            candidates.append(item)
+
+        # 5. 批量查询数据库(优化 N+1:一次连接查全部)
+        matched_map = find_ingredients_batch(candidates)
+
+        # 6. 构造结果(保留原始顺序,去重)
+        results: list[IngredientInfo] = []
+        seen: set[str] = set()
+
+        for item in candidates:
+            info = matched_map.get(item)
             # 用标准名去重(数据库返回的是标准名,未入库的用原始名)
             standard_name = info["name"] if info else item
             if standard_name in seen:
@@ -2056,4 +2067,10 @@ class IngredientService:
                     reference="LLM 分析,未经数据库核实",
                 ))
 
+        elapsed = time.time() - start_time
+        in_db_count = sum(1 for r in results if r.in_database)
+        logger.info(
+            f"成分匹配完成:候选 {len(candidates)} 个,命中库 {in_db_count} 个,"
+            f"总计 {len(results)} 个,耗时 {elapsed:.3f}s"
+        )
         return results
