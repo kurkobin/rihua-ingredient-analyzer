@@ -3,20 +3,15 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts'
+import {
+  getHistory, removeHistory, clearHistory, getHistoryById,
+  type HistoryItem,
+} from './storage'
 
-const API_BASE = import.meta.env.VITE_API_BASE || ''
+// 历史记录现在存本地 localStorage,不再调用后端接口
+// 对比功能改为前端本地计算(不再依赖后端 /api/compare)
 
-interface HistoryItem {
-  id: number
-  img_hash: string
-  product_type: string | null
-  summary: string | null
-  score: number | null
-  ingredient_count: number | null
-  created_at: string
-}
-
-interface CompareItem {
+interface CompareItemData {
   id: number
   product_type: string
   score: number
@@ -26,7 +21,7 @@ interface CompareItem {
 }
 
 interface CompareResult {
-  items: CompareItem[]
+  items: CompareItemData[]
   common_ingredients: string[]
   unique_ingredients: Record<number, string[]>
 }
@@ -62,42 +57,74 @@ function scoreClass(score: number | null): string {
   return 'bad'
 }
 
+// 本地计算对比结果
+function computeCompare(items: HistoryItem[]): CompareResult {
+  // 解析每条记录的 result_json,提取成分名、优缺点
+  const parsed: CompareItemData[] = items.map(item => {
+    try {
+      const data = JSON.parse(item.result_json)
+      return {
+        id: item.id,
+        product_type: item.product_type || '未知产品',
+        score: item.score ?? 0,
+        pros: data.pros || [],
+        cons: data.cons || [],
+        ingredient_names: (data.ingredients || []).map((ing: { name: string }) => ing.name),
+      }
+    } catch {
+      return {
+        id: item.id,
+        product_type: item.product_type || '未知产品',
+        score: item.score ?? 0,
+        pros: [],
+        cons: [],
+        ingredient_names: [],
+      }
+    }
+  })
+
+  // 计算共有成分(所有产品都含有的)
+  const nameSets = parsed.map(p => new Set(p.ingredient_names))
+  let common: string[] = []
+  if (nameSets.length > 0) {
+    common = [...nameSets[0]].filter(name => nameSets.every(s => s.has(name)))
+  }
+
+  // 计算独有成分(只出现在自己,不在其他产品中)
+  const unique: Record<number, string[]> = {}
+  parsed.forEach((p, idx) => {
+    const otherNames = new Set<string>()
+    nameSets.forEach((s, i) => {
+      if (i !== idx) s.forEach(n => otherNames.add(n))
+    })
+    unique[p.id] = p.ingredient_names.filter((n: string) => !otherNames.has(n))
+  })
+
+  return { items: parsed, common_ingredients: common, unique_ingredients: unique }
+}
+
 function History({ onBack, onView }: Props) {
   const [list, setList] = useState<HistoryItem[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [comparing, setComparing] = useState(false)
   const [compareResult, setCompareResult] = useState<CompareResult | null>(null)
-  // 独立的勾选模式开关(不再用 -1 哨兵)
   const [selectMode, setSelectMode] = useState(false)
 
-  const fetchHistory = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const resp = await fetch(`${API_BASE}/api/history`)
-      if (!resp.ok) throw new Error('获取历史记录失败')
-      const data: HistoryItem[] = await resp.json()
-      setList(data)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '未知错误')
-    } finally {
-      setLoading(false)
-    }
+  const refreshList = () => {
+    setList(getHistory())
   }
 
   useEffect(() => {
-    fetchHistory()
+    refreshList()
   }, [])
 
   // 趋势图数据:把 list 反转(最早→最晚),过滤无评分项
   const chartData = useMemo(() => {
     return [...list]
       .filter(item => item.score !== null)
-      .reverse()  // 原本是倒序,反转成时间正序
+      .reverse()
       .map((item, idx) => ({
-        idx: idx + 1,  // 序号(1,2,3...)
+        idx: idx + 1,
         score: item.score as number,
         label: formatChartTime(item.created_at),
         productType: item.product_type || '未知产品',
@@ -112,19 +139,14 @@ function History({ onBack, onView }: Props) {
   }, [chartData])
 
   // 查看详情
-  const handleView = async (id: number) => {
-    // 如果在勾选模式,点击切换勾选;否则查看详情
+  const handleView = (id: number) => {
     if (selectMode) {
       toggleSelect(id)
       return
     }
-    try {
-      const resp = await fetch(`${API_BASE}/api/history/${id}`)
-      if (!resp.ok) throw new Error('获取详情失败')
-      const detail = await resp.json()
+    const detail = getHistoryById(id)
+    if (detail) {
       onView(detail.result_json, id)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '未知错误')
     }
   }
 
@@ -135,7 +157,7 @@ function History({ onBack, onView }: Props) {
       if (next.has(id)) {
         next.delete(id)
       } else {
-        if (next.size >= 5) return prev  // 最多选 5 个
+        if (next.size >= 5) return prev
         next.add(id)
       }
       return next
@@ -143,56 +165,35 @@ function History({ onBack, onView }: Props) {
   }
 
   // 删除单条
-  const handleDelete = async (id: number, e: React.MouseEvent) => {
+  const handleDelete = (id: number, e: React.MouseEvent) => {
     e.stopPropagation()
     if (!confirm('确定删除这条记录?')) return
-    try {
-      const resp = await fetch(`${API_BASE}/api/history/${id}`, { method: 'DELETE' })
-      if (!resp.ok) throw new Error('删除失败')
-      setList(list.filter((item) => item.id !== id))
-      setSelected((prev) => {
-        const next = new Set(prev)
-        next.delete(id)
-        return next
-      })
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '未知错误')
-    }
+    removeHistory(id)
+    refreshList()
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
   }
 
   // 清空全部
-  const handleClearAll = async () => {
+  const handleClearAll = () => {
     if (list.length === 0) return
     if (!confirm(`确定清空全部 ${list.length} 条记录?此操作不可恢复。`)) return
-    try {
-      const resp = await fetch(`${API_BASE}/api/history`, { method: 'DELETE' })
-      if (!resp.ok) throw new Error('清空失败')
-      setList([])
-      setSelected(new Set())
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '未知错误')
-    }
+    clearHistory()
+    setList([])
+    setSelected(new Set())
   }
 
-  // 对比选中
-  const handleCompare = async () => {
-    if (selected.size < 2) {
-      setError('请至少选择 2 条记录进行对比')
-      return
-    }
+  // 对比选中(本地计算,不再调用后端)
+  const handleCompare = () => {
+    if (selected.size < 2) return
     setComparing(true)
-    setError(null)
     try {
-      const ids = Array.from(selected).join(',')
-      const resp = await fetch(`${API_BASE}/api/compare?ids=${ids}`)
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}))
-        throw new Error(err.detail || '对比失败')
-      }
-      const data: CompareResult = await resp.json()
-      setCompareResult(data)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '未知错误')
+      const selectedItems = list.filter(item => selected.has(item.id))
+      const result = computeCompare(selectedItems)
+      setCompareResult(result)
     } finally {
       setComparing(false)
     }
@@ -209,7 +210,7 @@ function History({ onBack, onView }: Props) {
     <div className="app">
       <header className="header">
         <h1>历史记录</h1>
-        <p>共 {list.length} 条分析记录</p>
+        <p>共 {list.length} 条分析记录 · 数据存储在本地浏览器</p>
       </header>
 
       <div className="history-actions">
@@ -243,14 +244,11 @@ function History({ onBack, onView }: Props) {
         )}
       </div>
 
-      {/* 勾选模式提示 */}
       {selectMode && !compareResult && (
         <div className="select-tip">
           点击记录进行勾选,选 2-5 条后点"对比"
         </div>
       )}
-
-      {error && <div className="error">⚠️ {error}</div>}
 
       {/* 对比结果 */}
       {compareResult && (
@@ -259,16 +257,11 @@ function History({ onBack, onView }: Props) {
 
       {!compareResult && (
         <>
-          {loading ? (
-            <div className="loading">
-              <div className="spinner" />
-              <div>加载中...</div>
-            </div>
-          ) : list.length === 0 ? (
+          {list.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">📋</div>
               <p>还没有分析记录</p>
-              <p className="empty-tip">返回首页扫描配料表,记录会自动保存</p>
+              <p className="empty-tip">返回首页扫描配料表,记录会自动保存到本地</p>
             </div>
           ) : (
             <>
@@ -326,52 +319,52 @@ function History({ onBack, onView }: Props) {
                 </div>
               )}
 
-            <div className="history-list">
-              {list.map((item) => (
-                <div
-                  key={item.id}
-                  className={`history-card ${selected.has(item.id) ? 'selected' : ''}`}
-                  onClick={() => handleView(item.id)}
-                >
-                  {selectMode && (
-                    <div className="history-checkbox">
-                      <input
-                        type="checkbox"
-                        checked={selected.has(item.id)}
-                        onChange={() => toggleSelect(item.id)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
+              <div className="history-list">
+                {list.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`history-card ${selected.has(item.id) ? 'selected' : ''}`}
+                    onClick={() => handleView(item.id)}
+                  >
+                    {selectMode && (
+                      <div className="history-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={selected.has(item.id)}
+                          onChange={() => toggleSelect(item.id)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    )}
+                    <div className="history-card-left">
+                      <div className={`history-score ${scoreClass(item.score)}`}>
+                        {item.score ?? '--'}
+                      </div>
                     </div>
-                  )}
-                  <div className="history-card-left">
-                    <div className={`history-score ${scoreClass(item.score)}`}>
-                      {item.score ?? '--'}
+                    <div className="history-card-body">
+                      <div className="history-product">
+                        {item.product_type || '未知产品'}
+                      </div>
+                      <div className="history-summary">
+                        {item.summary || '暂无简评'}
+                      </div>
+                      <div className="history-meta">
+                        <span>🧪 {item.ingredient_count ?? 0} 种成分</span>
+                        <span>🕐 {formatTime(item.created_at)}</span>
+                      </div>
                     </div>
+                    {!selectMode && (
+                      <button
+                        className="history-delete"
+                        onClick={(e) => handleDelete(item.id, e)}
+                        title="删除"
+                      >
+                        ✕
+                      </button>
+                    )}
                   </div>
-                  <div className="history-card-body">
-                    <div className="history-product">
-                      {item.product_type || '未知产品'}
-                    </div>
-                    <div className="history-summary">
-                      {item.summary || '暂无简评'}
-                    </div>
-                    <div className="history-meta">
-                      <span>🧪 {item.ingredient_count ?? 0} 种成分</span>
-                      <span>🕐 {formatTime(item.created_at)}</span>
-                    </div>
-                  </div>
-                  {!selectMode && (
-                    <button
-                      className="history-delete"
-                      onClick={(e) => handleDelete(item.id, e)}
-                      title="删除"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
             </>
           )}
         </>

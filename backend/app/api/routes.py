@@ -236,7 +236,7 @@ def compare_history(ids: str):
 
 @router.get("/report/{history_id}")
 def export_report(history_id: int):
-    """导出指定历史记录的 PDF 报告
+    """导出指定历史记录的 PDF 报告(旧接口,基于后端历史记录)
 
     返回 PDF 文件下载(application/pdf)
     """
@@ -255,6 +255,43 @@ def export_report(history_id: int):
     # 文件名:产品类型_成分分析报告_日期.pdf
     product_type = detail["product_type"] or "产品"
     # 中文文件名需要 RFC 5987 编码,避免乱码
+    filename = f"{product_type}_成分分析报告.pdf"
+    encoded_filename = quote(filename)
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}",
+        },
+    )
+
+
+@router.post("/report/generate")
+def generate_report_from_data(payload: dict):
+    """根据前端传入的完整分析数据生成 PDF 报告(新接口)
+
+    前端历史记录改为 localStorage 后,不再有后端 history_id,
+    改为前端 POST 完整 AnalysisResponse 数据,后端直接生成 PDF。
+
+    请求体:AnalysisResponse 的 JSON(含 ocr_text, ingredients, pros, cons,
+            score, summary, product_type, interactions, allergen_alerts, alternatives)
+    """
+    if not payload:
+        raise HTTPException(status_code=400, detail="请求体为空")
+
+    result_json = json.dumps(payload, ensure_ascii=False)
+    created_at = payload.get("created_at")  # 前端可选传入分析时间
+
+    try:
+        pdf_bytes = generate_report_pdf(
+            result_json=result_json,
+            created_at=created_at,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF 生成失败: {e}")
+
+    product_type = payload.get("product_type") or "产品"
     filename = f"{product_type}_成分分析报告.pdf"
     encoded_filename = quote(filename)
 

@@ -1,4 +1,6 @@
 """FastAPI 应用入口"""
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -7,11 +9,26 @@ from slowapi.errors import RateLimitExceeded
 from app.api.routes import router
 from app.config import settings
 from app.limiter import limiter
+from app.seed import seed_if_empty
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """应用生命周期:启动时初始化成分库(若为空)"""
+    # 启动时自动初始化成分库数据(解决容器重启数据丢失问题)
+    try:
+        seed_if_empty()
+    except Exception as e:
+        # seed 失败不阻断启动,后续接口会给出明确提示
+        print(f"[startup] 成分库初始化失败: {e}")
+    yield
+
 
 app = FastAPI(
     title="成分分析 API",
     description="扫描商品配料表,分析产品优缺点",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 # 挂载限流器
@@ -25,10 +42,15 @@ app.add_exception_handler(
     ),
 )
 
-# MVP 阶段允许所有来源,生产环境需收紧
+# CORS:生产环境收紧为前端域名白名单
+# 本地开发(localhost:5173)+ Vercel 生产域名
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://rihua-ingredient-analyzer.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -1,13 +1,11 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
+import {
+  getAllergens, addAllergen, removeAllergen,
+  type AllergenItem,
+} from './storage'
 
-const API_BASE = import.meta.env.VITE_API_BASE || ''
-
-// 过敏原项
-interface AllergenItem {
-  id: number
-  ingredient_name: string
-  created_at: string
-}
+// 过敏原档案现在存本地 localStorage,不再调用后端接口
+// 后端 analyze 接口不再做过敏原检查,改由前端在拿到结果后本地检查
 
 // 常见过敏成分快捷选项
 const COMMON_ALLERGENS = [
@@ -23,65 +21,35 @@ interface Props {
 
 function AllergenSettings({ onBack }: Props) {
   const [allergens, setAllergens] = useState<AllergenItem[]>([])
-  const [loading, setLoading] = useState(true)
   const [inputName, setInputName] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [adding, setAdding] = useState(false)
 
-  // 获取过敏原列表
-  const fetchAllergens = useCallback(async () => {
-    try {
-      const resp = await fetch(`${API_BASE}/api/allergens`)
-      if (!resp.ok) throw new Error('获取失败')
-      const data = await resp.json()
-      setAllergens(data.items)
-    } catch {
-      setError('获取过敏原列表失败')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const refreshList = () => {
+    setAllergens(getAllergens())
+  }
 
   useEffect(() => {
-    fetchAllergens()
-  }, [fetchAllergens])
+    refreshList()
+  }, [])
 
   // 添加过敏成分
-  const handleAdd = async (name: string) => {
+  const handleAdd = (name: string) => {
     const trimmed = name.trim()
     if (!trimmed) return
-    setAdding(true)
     setError(null)
-    try {
-      const resp = await fetch(`${API_BASE}/api/allergens`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ingredient_name: trimmed }),
-      })
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}))
-        throw new Error(err.detail || '添加失败')
-      }
-      setInputName('')
-      await fetchAllergens()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : '添加失败')
-    } finally {
-      setAdding(false)
+    const newItem = addAllergen(trimmed)
+    if (!newItem) {
+      setError(`"${trimmed}" 已在列表中`)
+      return
     }
+    setInputName('')
+    refreshList()
   }
 
   // 删除过敏成分
-  const handleDelete = async (id: number) => {
-    try {
-      const resp = await fetch(`${API_BASE}/api/allergens/${id}`, {
-        method: 'DELETE',
-      })
-      if (!resp.ok) throw new Error('删除失败')
-      setAllergens(prev => prev.filter(a => a.id !== id))
-    } catch {
-      setError('删除失败')
-    }
+  const handleDelete = (id: number) => {
+    removeAllergen(id)
+    refreshList()
   }
 
   // 已添加的成分名集合(用于快捷按钮禁用)
@@ -113,16 +81,15 @@ function AllergenSettings({ onBack }: Props) {
             value={inputName}
             onChange={(e) => setInputName(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !adding) handleAdd(inputName)
+              if (e.key === 'Enter') handleAdd(inputName)
             }}
-            disabled={adding}
           />
           <button
             className="btn btn-primary"
             onClick={() => handleAdd(inputName)}
-            disabled={!inputName.trim() || adding}
+            disabled={!inputName.trim()}
           >
-            {adding ? '添加中...' : '添加'}
+            添加
           </button>
         </div>
 
@@ -136,7 +103,6 @@ function AllergenSettings({ onBack }: Props) {
                   key={name}
                   className="allergen-quick-chip"
                   onClick={() => handleAdd(name)}
-                  disabled={adding}
                 >
                   + {name}
                 </button>
@@ -151,9 +117,7 @@ function AllergenSettings({ onBack }: Props) {
       {/* 列表区 */}
       <div className="allergen-list-section">
         <h3>已标记的过敏成分({allergens.length})</h3>
-        {loading ? (
-          <div className="allergen-empty">加载中...</div>
-        ) : allergens.length === 0 ? (
+        {allergens.length === 0 ? (
           <div className="allergen-empty">
             还没有标记过敏成分<br />
             <span className="allergen-empty-hint">添加后,扫描产品时会自动检测并预警</span>
@@ -187,7 +151,8 @@ function AllergenSettings({ onBack }: Props) {
         <ul>
           <li>添加过敏成分后,每次扫描产品时会自动检测是否含有该成分</li>
           <li>支持精确匹配成分名(如"香精"只匹配"香精",不匹配"薄荷油")</li>
-          <li>数据存储在本地浏览器关联的设备上,不会上传到云端</li>
+          <li>数据存储在你的浏览器本地,不会上传到云端,仅你可见</li>
+          <li>清除浏览器缓存或更换设备后,数据将丢失</li>
           <li>可以随时删除已标记的过敏成分</li>
         </ul>
       </div>

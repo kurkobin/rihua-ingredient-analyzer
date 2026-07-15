@@ -3,6 +3,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 import History from './History'
 import IngredientSearch from './IngredientSearch'
 import AllergenSettings from './AllergenSettings'
+import { addHistory, getAllergenNames } from './storage'
 
 // ===== API 基础地址 =====
 // 本地开发:走 Vite 代理(相对路径 /api)
@@ -254,6 +255,26 @@ function App() {
         throw new Error(err.detail || `请求失败(${resp.status})`)
       }
       const data: AnalysisResponse = await resp.json()
+
+      // 前端本地过敏原检查(替代后端检查,实现用户数据隔离)
+      const allergenNames = getAllergenNames()
+      if (allergenNames.length > 0) {
+        const ingredientNames = data.ingredients.map(ing => ing.name)
+        const hitAllergens = ingredientNames.filter(name => allergenNames.includes(name))
+        data.allergen_alerts = hitAllergens.map(name => ({ ingredient_name: name }))
+      }
+
+      // 保存到本地历史记录(localStorage)
+      const now = new Date().toISOString()
+      addHistory({
+        img_hash: '',  // 本地存储不再需要 img_hash
+        product_type: data.product_type,
+        summary: data.summary,
+        score: data.score,
+        ingredient_count: data.ingredients.length,
+        result_json: JSON.stringify({ ...data, created_at: now }),
+      })
+
       setResult(data)
       resetFilters()  // 新结果重置筛选状态
     } catch (e) {
@@ -303,10 +324,9 @@ function App() {
   }, [result])
 
   // 查看历史详情(从历史记录页返回时,把 JSON 解析成结果展示)
-  const handleViewHistory = (resultJson: string, historyId: number) => {
+  const handleViewHistory = (resultJson: string, _historyId: number) => {
     try {
       const data: AnalysisResponse = JSON.parse(resultJson)
-      data.history_id = historyId  // 补上 history_id 供导出 PDF
       setResult(data)
       resetFilters()  // 重置筛选状态
       setImage(null)
@@ -317,14 +337,23 @@ function App() {
     }
   }
 
-  // 导出 PDF 报告
+  // 导出 PDF 报告(POST 完整数据给后端生成)
   const handleExportPDF = async () => {
-    if (!result?.history_id) {
-      setError('无法导出:缺少历史记录 ID')
+    if (!result) {
+      setError('无法导出:没有分析结果')
       return
     }
     try {
-      const resp = await fetch(`${API_BASE}/api/report/${result.history_id}`)
+      // 构造完整数据,带上分析时间
+      const payload = {
+        ...result,
+        created_at: new Date().toISOString(),
+      }
+      const resp = await fetch(`${API_BASE}/api/report/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({}))
         throw new Error(err.detail || '导出失败')
@@ -708,7 +737,7 @@ function App() {
           </div>
 
           {/* 导出 PDF */}
-          {result.history_id && (
+          {result && (
             <button
               className="btn btn-primary"
               onClick={handleExportPDF}
